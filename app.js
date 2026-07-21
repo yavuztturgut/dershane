@@ -5,6 +5,7 @@ const roleRoutes = require('./components/roles/roles.route');
 const classRoutes = require('./components/classes/classes.route');
 const authRoutes = require('./components/auth/auth.route');
 const scheduleRoutes = require('./components/schedules/schedules.route');
+const errorMiddleware = require('./middlewares/error-middleware');
 const app = express();
 
 app.use(express.json());
@@ -14,5 +15,7 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/classes", classRoutes);
 app.use('/api/schedules', scheduleRoutes);
+
+app.use(errorMiddleware);
 
 module.exports = app;
