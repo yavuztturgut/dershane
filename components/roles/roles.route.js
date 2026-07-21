@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const requireRole = require('../middlewares/role-middleware');
-const rolesController = require('../controllers/roles-controller');
-const authMiddleware = require('../middlewares/auth-middleware');
+const rolesController = require('./roles.controller');
+const authMiddleware = require('../../middlewares/auth-middleware');
+const requireRole = require('../../middlewares/role-middleware');
 
 router.get('/', authMiddleware, requireRole('admin'), rolesController.getRoles);
 router.get('/:id', authMiddleware, requireRole('admin'), rolesController.getRoleById);

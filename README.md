@@ -32,27 +32,51 @@ Basit bir dershane yonetim sistemi icin gelistirilmis Node.js + Express backend 
 .
 +-- app.js
 +-- server.js
-+-- create.sql
 +-- db/
 |   +-- pool.js
+|   +-- create.sql
 +-- middlewares/
 |   +-- auth-middleware.js
 |   +-- role-middleware.js
-+-- controllers/
-|   +-- auth-controller.js
-|   +-- users-controller.js
-|   +-- roles-controller.js
-|   +-- classes-controller.js
-|   +-- courses-controller.js
-|   +-- schedule-controller.js
-+-- routes/
-    +-- auth-routes.js
-    +-- users-routes.js
-    +-- roles-routes.js
-    +-- classes-routes.js
-    +-- courses-routes.js
-    +-- schedule-routes.js
++-- components/
+|   +-- auth/
+|   |   +-- auth.route.js
+|   |   +-- auth.controller.js
+|   |   +-- auth.service.js
+|   |   +-- auth.repository.js
+|   +-- users/
+|   |   +-- users.route.js
+|   |   +-- users.controller.js
+|   |   +-- users.service.js
+|   |   +-- users.repository.js
+|   +-- roles/
+|   |   +-- roles.route.js
+|   |   +-- roles.controller.js
+|   |   +-- roles.service.js
+|   |   +-- roles.repository.js
+|   +-- classes/
+|   |   +-- classes.route.js
+|   |   +-- classes.controller.js
+|   |   +-- classes.service.js
+|   |   +-- classes.repository.js
+|   +-- courses/
+|   |   +-- courses.route.js
+|   |   +-- courses.controller.js
+|   |   +-- courses.service.js
+|   |   +-- courses.repository.js
+|   +-- schedules/
+|       +-- schedules.route.js
+|       +-- schedules.controller.js
+|       +-- schedules.service.js
+|       +-- schedules.repository.js
 ```
+
+Component dosyalarinin gorevi:
+
+- `*.route.js`: Endpoint adreslerini ve middleware siralamasini tanimlar.
+- `*.controller.js`: `req` bilgisini alir, service sonucunu HTTP response olarak dondurur.
+- `*.service.js`: Is kurallarini ve validasyonlari yonetir.
+- `*.repository.js`: PostgreSQL sorgularini calistirir.
 
 ## Kurulum
 

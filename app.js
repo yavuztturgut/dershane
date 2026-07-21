@@ -1,10 +1,10 @@
 const express = require('express');
-const userRoutes = require('./routes/users-routes');
-const courseRoutes = require('./routes/courses-routes');
-const roleRoutes = require('./routes/roles-routes');
-const classRoutes = require('./routes/classes-routes');
-const authRoutes = require('./routes/auth-routes');
-const scheduleRoutes = require('./routes/schedule-routes');
+const userRoutes = require('./components/users/users.route');
+const courseRoutes = require('./components/courses/courses.route');
+const roleRoutes = require('./components/roles/roles.route');
+const classRoutes = require('./components/classes/classes.route');
+const authRoutes = require('./components/auth/auth.route');
+const scheduleRoutes = require('./components/schedules/schedules.route');
 const app = express();
 
 app.use(express.json());

@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-const coursesController = require('../controllers/courses-controller');
-const authMiddleware = require('../middlewares/auth-middleware');
-const requireRole = require('../middlewares/role-middleware');
+const coursesController = require('./courses.controller');
+const authMiddleware = require('../../middlewares/auth-middleware');
+const requireRole = require('../../middlewares/role-middleware');
 
 router.get('/', authMiddleware, coursesController.getCourses);
 router.get('/:id', authMiddleware, coursesController.getCourseById);
