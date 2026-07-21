@@ -1,10 +1,5 @@
 const schedulesRepository = require('./schedules.repository');
-
-function createHttpError(message, statusCode) {
-    const error = new Error(message);
-    error.statusCode = statusCode;
-    return error;
-}
+const createHttpError = require('../../utils/create-http-error');
 
 async function getSchedules(user) {
     return schedulesRepository.findSchedulesForUser(user);

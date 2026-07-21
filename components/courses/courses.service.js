@@ -1,4 +1,5 @@
 const coursesRepository = require('./courses.repository');
+const createHttpError = require('../../utils/create-http-error');
 
 async function getCourses() {
     return coursesRepository.findAllCourses();
@@ -8,9 +9,7 @@ async function getCourseById(id) {
     const course = await coursesRepository.findCourseById(id);
 
     if (!course) {
-        const error = new Error('Course not found');
-        error.statusCode = 404;
-        throw error;
+        throw createHttpError('Course not found', 404);
     }
 
     return course;
@@ -20,9 +19,7 @@ async function createCourse(data) {
     const { name } = data;
 
     if (!name) {
-        const error = new Error('Course name is required');
-        error.statusCode = 400;
-        throw error;
+        throw createHttpError('Course name is required', 400);
     }
 
     return coursesRepository.insertCourse(name);
@@ -32,17 +29,13 @@ async function updateCourse(id, data) {
     const { name } = data;
 
     if (!name) {
-        const error = new Error('Course name is required');
-        error.statusCode = 400;
-        throw error;
+        throw createHttpError('Course name is required', 400);
     }
 
     const course = await coursesRepository.updateCourseById(id, name);
 
     if (!course) {
-        const error = new Error('Course not found');
-        error.statusCode = 404;
-        throw error;
+        throw createHttpError('Course not found', 404);
     }
 
     return course;
@@ -52,9 +45,7 @@ async function deleteCourse(id) {
     const course = await coursesRepository.deleteCourseById(id);
 
     if (!course) {
-        const error = new Error('Course not found');
-        error.statusCode = 404;
-        throw error;
+        throw createHttpError('Course not found', 404);
     }
 
     return course;

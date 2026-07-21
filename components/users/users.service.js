@@ -1,11 +1,6 @@
 const bcrypt = require('bcrypt');
 const usersRepository = require('./users.repository');
-
-function createHttpError(message, statusCode) {
-    const error = new Error(message);
-    error.statusCode = statusCode;
-    return error;
-}
+const createHttpError = require('../../utils/create-http-error');
 
 async function getUsers() {
     return usersRepository.findAllUsers();

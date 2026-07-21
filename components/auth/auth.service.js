@@ -1,12 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const authRepository = require('./auth.repository');
-
-function createHttpError(message, statusCode) {
-    const error = new Error(message);
-    error.statusCode = statusCode;
-    return error;
-}
+const createHttpError = require('../../utils/create-http-error');
 
 async function login(data) {
     const { email, password } = data;
