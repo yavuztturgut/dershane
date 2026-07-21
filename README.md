@@ -1,6 +1,8 @@
 # Dershane Node API
 
-Basit bir dershane yonetim sistemi icin gelistirilmis Node.js + Express backend API projesidir. Frontend yoktur; endpointler Postman veya benzeri API clientlari ile test edilebilir.
+Basit bir dershane yonetim sistemi icin gelistirilmis Node.js + Express backend API projesidir. React tabanli yonetim arayuzu ve API endpointleri bulunur.
+
+Frontend uygulamasinin mimari kurallari icin [frontend architecture](docs/frontend-architecture.md) dokumanina bak.
 
 ## Ozellikler
 

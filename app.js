@@ -1,4 +1,6 @@
 const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const userRoutes = require('./components/users/users.route');
 const courseRoutes = require('./components/courses/courses.route');
 const roleRoutes = require('./components/roles/roles.route');
@@ -8,6 +10,11 @@ const scheduleRoutes = require('./components/schedules/schedules.route');
 const errorMiddleware = require('./middlewares/error-middleware');
 const app = express();
 
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    credentials: true
+}));
+app.use(cookieParser());
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use("/api/users", userRoutes);

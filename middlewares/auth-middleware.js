@@ -1,19 +1,11 @@
 const jwt = require('jsonwebtoken');
 
 const authMiddleware = (req, res, next) => {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.access_token;
 
-    if (!authHeader) {
+    if (!token) {
         return res.status(401).json({ error: 'Token is required' });
     }
-
-    const parts = authHeader.split(' ');
-
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-        return res.status(401).json({ error: 'Invalid token format' });
-    }
-
-    const token = parts[1];
 
     try {
         req.user = jwt.verify(token, process.env.JWT_SECRET);

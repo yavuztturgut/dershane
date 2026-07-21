@@ -1,0 +1,155 @@
+.page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem);
+}
+
+.calendarSurface {
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.calendarToolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+}
+
+.toolbarTitle {
+  text-align: center;
+  font-size: clamp(1.05rem, 1rem + .5vw, 1.35rem);
+}
+
+.toolbarViews {
+  justify-self: end;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--mantine-color-gray-3);
+  background: var(--mantine-color-gray-0);
+}
+
+.calendar {
+  padding: .75rem;
+}
+
+.calendar :global(.fc) {
+  --fc-border-color: var(--mantine-color-gray-3);
+  --fc-today-bg-color: color-mix(in srgb, var(--mantine-color-blue-1) 55%, transparent);
+  --fc-page-bg-color: var(--mantine-color-body);
+  --fc-neutral-bg-color: var(--mantine-color-gray-0);
+  font-size: .875rem;
+}
+
+.calendar :global(.fc-scrollgrid),
+.calendar :global(.fc-theme-standard td),
+.calendar :global(.fc-theme-standard th) {
+  border-color: var(--mantine-color-gray-3);
+}
+
+.calendar :global(.fc-col-header-cell-cushion) {
+  padding: .75rem .25rem;
+  color: var(--mantine-color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.calendar :global(.fc-timegrid-slot-label-cushion) {
+  color: var(--mantine-color-dimmed);
+  padding-inline-end: .75rem;
+}
+
+.calendar :global(.fc-event) {
+  border: 0;
+  border-radius: .375rem;
+  box-shadow: var(--mantine-shadow-xs);
+}
+
+.event {
+  height: 100%;
+  overflow: hidden;
+  padding: .35rem .45rem;
+  color: white;
+  cursor: pointer;
+}
+
+.eventCourse,
+.eventMeta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventCourse {
+  font-weight: 700;
+}
+
+.eventMeta {
+  margin-top: .125rem;
+  font-size: .72rem;
+  opacity: .92;
+}
+
+@media (max-width: 48rem) {
+  .calendarToolbar {
+    grid-template-columns: 1fr auto;
+  }
+
+  .toolbarTitle {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .toolbarActions {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .toolbarViews {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar {
+    padding: .5rem;
+  }
+
+  .calendar :global(.fc) {
+    font-size: .75rem;
+  }
+}
+
+:global([data-mantine-color-scheme='dark']) .calendarSurface,
+:global([data-mantine-color-scheme='dark']) .calendarToolbar,
+:global([data-mantine-color-scheme='dark']) .filters {
+  border-color: var(--mantine-color-dark-4);
+}
+
+:global([data-mantine-color-scheme='dark']) .filters {
+  background: var(--mantine-color-dark-7);
+}
