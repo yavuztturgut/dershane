@@ -1,8 +1,8 @@
-import { ActionIcon, AppShell, Group, Menu, NavLink, Select, Text } from '@mantine/core';
+import { ActionIcon, AppShell, Group, NavLink, Select, Text } from '@mantine/core';
 import { useMantineColorScheme } from '@mantine/core';
 import {
   IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
-  IconLogout, IconMoon, IconSchool, IconSun, IconUser, IconUsers, IconUserShield,
+  IconLanguage, IconLogout, IconMoon, IconSchool, IconSun, IconUser, IconUsers, IconUserShield,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -33,8 +33,17 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
   }
 
   function changeLanguage(language) {
+    if (!language) return;
     localStorage.setItem('language', language);
     i18n.changeLanguage(language);
+  }
+
+  function toggleColorScheme() {
+    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
+  }
+
+  function toggleLanguage() {
+    changeLanguage(i18n.language === 'tr' ? 'en' : 'tr');
   }
 
   return (
@@ -73,25 +82,28 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
       <div className="border-t border-gray-200 p-3 dark:border-dark-5">
         {!collapsed && <Text size="sm" fw={600} truncate>{user.name}</Text>}
         {!collapsed && <Text size="xs" c="dimmed" mb="sm">{user.role_name}</Text>}
-        <Select
-          aria-label={t('language')}
-          value={i18n.language}
-          onChange={changeLanguage}
-          data={[{ value: 'en', label: 'English' }, { value: 'tr', label: 'Turkce' }]}
-          className="mb-2"
-        />
-        <Menu shadow="md" width={160} position="top-start">
-          <Menu.Target>
-            <ActionIcon variant="light" aria-label="Change color scheme">
-              {colorScheme === 'dark' ? <IconMoon size={18} /> : <IconSun size={18} />}
+        <Group gap="xs" wrap="nowrap">
+          {collapsed ? (
+            <ActionIcon variant="light" onClick={toggleLanguage} aria-label={t('language')}>
+              <IconLanguage size={18} />
             </ActionIcon>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Item onClick={() => setColorScheme('light')}>{t('light')}</Menu.Item>
-            <Menu.Item onClick={() => setColorScheme('dark')}>{t('dark')}</Menu.Item>
-            <Menu.Item onClick={() => setColorScheme('auto')}>{t('system')}</Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+          ) : (
+            <Select
+              aria-label={t('language')}
+              value={i18n.language}
+              onChange={changeLanguage}
+              data={[{ value: 'en', label: 'English' }, { value: 'tr', label: 'Turkce' }]}
+              className="min-w-0 flex-1"
+            />
+          )}
+          <ActionIcon
+            variant="light"
+            onClick={toggleColorScheme}
+            aria-label={colorScheme === 'dark' ? t('light') : t('dark')}
+          >
+            {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
+          </ActionIcon>
+        </Group>
         <NavLink
           label={collapsed ? undefined : t('logout')}
           leftSection={<IconLogout size={19} />}

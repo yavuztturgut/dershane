@@ -14,5 +14,14 @@ export default {
     unexpectedError: 'Something went wrong', unexpectedErrorMessage: 'The application could not render this screen.', reload: 'Reload application',
     today: 'Today', previous: 'Previous', next: 'Next', day: 'Day', week: 'Week', month: 'Month',
     filterCourse: 'Filter by course', filterClass: 'Filter by class', filterTeacher: 'Filter by teacher',
+    errors: {
+      GENERIC: 'Something went wrong. Please try again.', REQUIRED: 'This field is required.', INVALID_EMAIL: 'Enter a valid email address.',
+      TOKEN_REQUIRED: 'Authentication is required.', INVALID_TOKEN: 'Your session is invalid.', UNAUTHORIZED: 'You need to sign in.', FORBIDDEN: 'You do not have permission for this action.',
+      EMAIL_EXISTS: 'This email address already exists.', ROLE_EXISTS: 'This role already exists.', CLASS_NAME_EXISTS: 'This class name already exists.', COURSE_NAME_EXISTS: 'This course name already exists.', DUPLICATE_RECORD: 'This record already exists.',
+      RECORD_IN_USE: 'This record cannot be deleted because it is in use.', INVALID_REFERENCE: 'The selected related record is invalid.',
+      SCHEDULE_END_BEFORE_START: 'End time must be after start time.', SCHEDULE_REQUIRED_FIELDS: 'All schedule fields are required.', INVALID_TEACHER: 'The selected teacher must be active.', SCHEDULE_NOT_FOUND: 'Schedule not found.',
+      USER_NOT_FOUND: 'User not found.', ROLE_NOT_FOUND: 'Role not found.', CLASS_NOT_FOUND: 'Class not found.', COURSE_NOT_FOUND: 'Course not found.', REQUIRED_FIELDS: 'Required fields are missing.',
+      ROLE_NAME_REQUIRED: 'Role name is required.', CLASS_NAME_REQUIRED: 'Class name is required.', COURSE_NAME_REQUIRED: 'Course name is required.', AUTH_CREDENTIALS_REQUIRED: 'Email and password are required.', INVALID_CREDENTIALS: 'Invalid email or password.', USER_INACTIVE: 'This user is inactive.', INTERNAL_ERROR: 'A server error occurred.', REQUEST_FAILED: 'The request could not be completed.', LOGOUT_FAILED: 'Unable to log out.',
+    },
   },
 };

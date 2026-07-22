@@ -3,10 +3,11 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/api-client';
+import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
 import { PageHeader } from './PageHeader';
 import { PageLoader } from './PageLoader';
@@ -16,7 +17,8 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
   const { t } = useTranslation();
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const form = useForm({ initialValues: { name: '' }, validate: { name: (value) => value.trim() ? null : 'Required' } });
+  const saveRequestRef = useRef(false);
+  const form = useForm({ initialValues: { name: '' }, validate: { name: (value) => value.trim() ? null : t('errors.REQUIRED') } });
   const listQuery = useQuery({ queryKey: [queryKey], queryFn: api.getAll });
   const detailQuery = useQuery({ queryKey: [queryKey, editingId], queryFn: () => api.getById(editingId), enabled: Boolean(editingId) });
 
@@ -32,12 +34,13 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
       setOpened(false);
       invalidate();
     },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
+    onSettled: () => { saveRequestRef.current = false; },
   });
   const deleteMutation = useMutation({
     mutationFn: api.remove,
     onSuccess: () => { notifications.show({ color: 'green', message: t('deleted') }); invalidate(); },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
   });
 
   function openCreate() {
@@ -49,6 +52,12 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
   function openEdit(id) {
     setEditingId(id);
     setOpened(true);
+  }
+
+  function saveEntity(values) {
+    if (saveRequestRef.current) return;
+    saveRequestRef.current = true;
+    saveMutation.mutate({ ...values, name: values.name.trim() });
   }
 
   function confirmDelete(item) {
@@ -81,7 +90,7 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
       )}
       <Modal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')} fullScreen={false} centered>
         {editingId && detailQuery.isLoading ? <PageLoader /> : (
-          <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>
+          <form onSubmit={form.onSubmit(saveEntity)}>
             <TextInput label={t('name')} required {...form.getInputProps('name')} />
             <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group>
           </form>

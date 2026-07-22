@@ -10,6 +10,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { getErrorMessage } from '../../lib/api-client';
+import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
 import { rolesApi } from '../roles/roles.api';
 import { classesApi } from '../classes/classes.api';
@@ -47,12 +48,12 @@ export function UsersPage() {
       return editingId ? usersApi.update(editingId, payload) : usersApi.create(payload);
     },
     onSuccess: () => { notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') }); setOpened(false); queryClient.invalidateQueries({ queryKey: ['users'] }); },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
   });
   const deleteMutation = useMutation({
     mutationFn: usersApi.remove,
     onSuccess: () => { notifications.show({ color: 'green', message: t('deleted') }); queryClient.invalidateQueries({ queryKey: ['users'] }); },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
   });
 
   const roleName = (id) => rolesQuery.data?.find((role) => role.id === id)?.name || id;

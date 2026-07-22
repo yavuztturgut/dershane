@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { notifications } from '@mantine/notifications';
 import { authApi } from './auth.api';
 import { queryClient } from '../../lib/query-client';
 import { setUnauthorizedHandler } from '../../lib/api-client';
+import { notifyError } from '../../lib/notifications';
+import i18n from '../../app/i18n';
 
 const AuthContext = createContext(null);
 const profileKey = ['auth', 'profile'];
@@ -46,7 +47,7 @@ export function AuthProvider({ children }) {
       try {
         await logoutMutation.mutateAsync();
       } catch {
-        notifications.show({ color: 'red', message: 'Unable to log out.' });
+        notifyError(i18n.t('errors.LOGOUT_FAILED'));
       }
     },
   }), [profileQuery.data, profileQuery.isLoading, loginMutation, logoutMutation]);

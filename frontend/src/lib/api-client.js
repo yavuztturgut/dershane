@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../app/i18n';
 
 let unauthorizedHandler;
 
@@ -23,5 +24,10 @@ export function setUnauthorizedHandler(handler) {
 }
 
 export function getErrorMessage(error) {
-  return error.response?.data?.error || 'Something went wrong. Please try again.';
+  const errorCode = error.response?.data?.errorCode;
+  const translationKey = errorCode && `errors.${errorCode}`;
+
+  return translationKey && i18n.exists(translationKey)
+    ? i18n.t(translationKey)
+    : i18n.t('errors.GENERIC');
 }

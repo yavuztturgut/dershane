@@ -7,7 +7,7 @@ CREATE TABLE roles(
 
 CREATE TABLE classes(
                         id         SERIAL PRIMARY KEY,
-                        name       VARCHAR(50) NOT NULL UNIQUE,
+                        name       VARCHAR(50) NOT NULL,
                         created_at TIMESTAMP DEFAULT NOW(),
                         updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -27,7 +27,7 @@ CREATE TABLE users(
 
 CREATE TABLE courses(
                         id SERIAL PRIMARY KEY,
-                        name VARCHAR(100) NOT NULL UNIQUE,
+                        name VARCHAR(100) NOT NULL,
                         created_at TIMESTAMP DEFAULT NOW(),
                         updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -43,3 +43,6 @@ CREATE TABLE schedules(
                           updated_at TIMESTAMP DEFAULT NOW(),
                           CHECK (end_time > start_time)
 );
+
+CREATE UNIQUE INDEX classes_normalized_name_key ON classes (LOWER(BTRIM(name)));
+CREATE UNIQUE INDEX courses_normalized_name_key ON courses (LOWER(BTRIM(name)));

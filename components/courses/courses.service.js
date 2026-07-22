@@ -16,7 +16,7 @@ async function getCourseById(id) {
 }
 
 async function createCourse(data) {
-    const { name } = data;
+    const name = data.name?.trim();
 
     if (!name) {
         throw createHttpError('Course name is required', 400);
@@ -26,7 +26,7 @@ async function createCourse(data) {
 }
 
 async function updateCourse(id, data) {
-    const { name } = data;
+    const name = data.name?.trim();
 
     if (!name) {
         throw createHttpError('Course name is required', 400);

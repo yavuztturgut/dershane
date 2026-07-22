@@ -16,7 +16,7 @@ async function getClassById(id) {
 }
 
 async function createClass(data) {
-    const { name } = data;
+    const name = data.name?.trim();
 
     if (!name) {
         throw createHttpError('Class name is required', 400);
@@ -26,7 +26,7 @@ async function createClass(data) {
 }
 
 async function updateClass(id, data) {
-    const { name } = data;
+    const name = data.name?.trim();
 
     if (!name) {
         throw createHttpError('Class name is required', 400);

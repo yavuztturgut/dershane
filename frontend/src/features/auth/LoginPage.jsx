@@ -1,10 +1,10 @@
 import { Button, Paper, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { useTranslation } from 'react-i18next';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from './auth-context';
 import { getErrorMessage } from '../../lib/api-client';
+import { notifyError } from '../../lib/notifications';
 import { PageLoader } from '../../components/ui/PageLoader';
 
 export function LoginPage() {
@@ -13,7 +13,7 @@ export function LoginPage() {
   const { user, isLoading, login, isLoggingIn } = useAuth();
   const form = useForm({
     initialValues: { email: '', password: '' },
-    validate: { email: (value) => /^\S+@\S+\.\S+$/.test(value) ? null : 'Invalid email', password: (value) => value ? null : 'Required' },
+    validate: { email: (value) => /^\S+@\S+\.\S+$/.test(value) ? null : t('errors.INVALID_EMAIL'), password: (value) => value ? null : t('errors.REQUIRED') },
   });
 
   if (isLoading) return <PageLoader fullPage />;
@@ -24,7 +24,7 @@ export function LoginPage() {
       const loggedInUser = await login(values);
       navigate(loggedInUser.role_name === 'admin' ? '/' : '/schedules');
     } catch (error) {
-      notifications.show({ color: 'red', message: getErrorMessage(error) });
+      notifyError(getErrorMessage(error));
     }
   }
 

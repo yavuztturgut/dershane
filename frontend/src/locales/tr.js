@@ -14,5 +14,14 @@ export default {
     unexpectedError: 'Bir hata oluştu', unexpectedErrorMessage: 'Uygulama bu ekranı görüntüleyemedi.', reload: 'Uygulamayı yenile',
     today: 'Bugün', previous: 'Önceki', next: 'Sonraki', day: 'Gün', week: 'Hafta', month: 'Ay',
     filterCourse: 'Derse göre filtrele', filterClass: 'Sınıfa göre filtrele', filterTeacher: 'Öğretmene göre filtrele',
+    errors: {
+      GENERIC: 'Bir hata oluştu. Lütfen tekrar deneyin.', REQUIRED: 'Bu alan zorunludur.', INVALID_EMAIL: 'Geçerli bir e-posta adresi girin.',
+      TOKEN_REQUIRED: 'Oturum bilgisi gerekli.', INVALID_TOKEN: 'Oturum geçersiz.', UNAUTHORIZED: 'Oturum açmanız gerekiyor.', FORBIDDEN: 'Bu işlem için yetkiniz yok.',
+      EMAIL_EXISTS: 'Bu e-posta adresi zaten kayıtlı.', ROLE_EXISTS: 'Bu rol zaten mevcut.', CLASS_NAME_EXISTS: 'Bu sınıf adı zaten mevcut.', COURSE_NAME_EXISTS: 'Bu ders adı zaten mevcut.', DUPLICATE_RECORD: 'Bu kayıt zaten mevcut.',
+      RECORD_IN_USE: 'Bu kayıt başka kayıtlarda kullanıldığı için silinemez.', INVALID_REFERENCE: 'Seçilen ilişkili kayıt geçersiz.',
+      SCHEDULE_END_BEFORE_START: 'Bitiş zamanı başlangıçtan sonra olmalıdır.', SCHEDULE_REQUIRED_FIELDS: 'Ders programı için tüm alanlar zorunludur.', INVALID_TEACHER: 'Seçilen öğretmen aktif bir öğretmen olmalıdır.', SCHEDULE_NOT_FOUND: 'Ders programı bulunamadı.',
+      USER_NOT_FOUND: 'Kullanıcı bulunamadı.', ROLE_NOT_FOUND: 'Rol bulunamadı.', CLASS_NOT_FOUND: 'Sınıf bulunamadı.', COURSE_NOT_FOUND: 'Ders bulunamadı.', REQUIRED_FIELDS: 'Zorunlu alanlar eksik.',
+      ROLE_NAME_REQUIRED: 'Rol adı zorunludur.', CLASS_NAME_REQUIRED: 'Sınıf adı zorunludur.', COURSE_NAME_REQUIRED: 'Ders adı zorunludur.', AUTH_CREDENTIALS_REQUIRED: 'E-posta ve şifre zorunludur.', INVALID_CREDENTIALS: 'E-posta veya şifre hatalı.', USER_INACTIVE: 'Bu kullanıcı pasif durumdadır.', INTERNAL_ERROR: 'Sunucuda bir hata oluştu.', REQUEST_FAILED: 'İstek tamamlanamadı.', LOGOUT_FAILED: 'Çıkış yapılamadı.',
+    },
   },
 };

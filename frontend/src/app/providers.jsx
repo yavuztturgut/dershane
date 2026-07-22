@@ -12,7 +12,7 @@ export function AppProviders({ children }) {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <ModalsProvider>
-            <Notifications position="top-right" />
+            <Notifications position="top-right" limit={3} />
             {children}
           </ModalsProvider>
         </AuthProvider>

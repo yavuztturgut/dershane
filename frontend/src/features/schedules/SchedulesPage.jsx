@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/auth-context';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { getErrorMessage } from '../../lib/api-client';
+import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
 import { coursesApi } from '../courses/courses.api';
 import { classesApi } from '../classes/classes.api';
@@ -33,6 +34,20 @@ import styles from './SchedulesPage.module.css';
 const initialValues = {
   course_id: '', class_id: '', teacher_id: '', start_time: null, end_time: null,
 };
+
+function getTimestamp(value) {
+  if (value instanceof Date) return value.getTime();
+  if (typeof value === 'string') return new Date(value.replace(' ', 'T')).getTime();
+  return Number.NaN;
+}
+
+function toLocalDateTime(value) {
+  const date = value instanceof Date ? value : new Date(value?.replace?.(' ', 'T'));
+  if (Number.isNaN(date?.getTime?.())) return null;
+
+  const pad = (part) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
 
 function ScheduleEvent({ event }) {
   const { course_name, class_name, teacher_name } = event.extendedProps;
@@ -51,6 +66,7 @@ export function SchedulesPage() {
   const isAdmin = user.role_name === 'admin';
   const isMobile = useMediaQuery('(max-width: 48rem)');
   const calendarRef = useRef(null);
+  const saveRequestRef = useRef(false);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [activeView, setActiveView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
@@ -59,11 +75,18 @@ export function SchedulesPage() {
   const form = useForm({
     initialValues,
     validate: {
-      course_id: (value) => value ? null : 'Required',
-      class_id: (value) => value ? null : 'Required',
-      teacher_id: (value) => value ? null : 'Required',
-      start_time: (value) => value ? null : 'Required',
-      end_time: (value, values) => value && values.start_time && value > values.start_time ? null : 'End must be after start',
+      course_id: (value) => value ? null : t('errors.REQUIRED'),
+      class_id: (value) => value ? null : t('errors.REQUIRED'),
+      teacher_id: (value) => value ? null : t('errors.REQUIRED'),
+      start_time: (value) => value ? null : t('errors.REQUIRED'),
+      end_time: (value, values) => {
+        const startTime = getTimestamp(values.start_time);
+        const endTime = getTimestamp(value);
+
+        return Number.isFinite(startTime) && Number.isFinite(endTime) && endTime > startTime
+          ? null
+          : t('errors.SCHEDULE_END_BEFORE_START');
+      },
     },
   });
   const schedulesQuery = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.getAll });
@@ -102,8 +125,8 @@ export function SchedulesPage() {
         course_id: Number(values.course_id),
         class_id: Number(values.class_id),
         teacher_id: Number(values.teacher_id),
-        start_time: values.start_time.toISOString(),
-        end_time: values.end_time.toISOString(),
+        start_time: toLocalDateTime(values.start_time),
+        end_time: toLocalDateTime(values.end_time),
       };
 
       return editingId ? schedulesApi.update(editingId, payload) : schedulesApi.create(payload);
@@ -113,7 +136,8 @@ export function SchedulesPage() {
       setOpened(false);
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
+    onSettled: () => { saveRequestRef.current = false; },
   });
   const deleteMutation = useMutation({
     mutationFn: schedulesApi.remove,
@@ -122,7 +146,7 @@ export function SchedulesPage() {
       setOpened(false);
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
     },
-    onError: (error) => notifications.show({ color: 'red', message: getErrorMessage(error) }),
+    onError: (error) => notifyError(getErrorMessage(error)),
   });
 
   const teacherRoleId = rolesQuery.data?.find((role) => role.name === 'teacher')?.id;
@@ -167,6 +191,12 @@ export function SchedulesPage() {
     form.setValues({ ...initialValues, start_time: selection.start, end_time: selection.end });
     selection.view.calendar.unselect();
     setOpened(true);
+  }
+
+  function saveSchedule(values) {
+    if (saveRequestRef.current) return;
+    saveRequestRef.current = true;
+    saveMutation.mutate(values);
   }
 
   function confirmDelete() {
@@ -258,7 +288,7 @@ export function SchedulesPage() {
             <Text><b>{t('end')}:</b> {new Date(detailQuery.data.end_time).toLocaleString()}</Text>
           </Stack>
         ) : (
-          <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>
+          <form onSubmit={form.onSubmit(saveSchedule)}>
             <SimpleGrid cols={{ base: 1, sm: 2 }}>
               <Select label={t('course')} data={courseOptions} required {...form.getInputProps('course_id')} />
               <Select label={t('class')} data={classOptions} required {...form.getInputProps('class_id')} />
