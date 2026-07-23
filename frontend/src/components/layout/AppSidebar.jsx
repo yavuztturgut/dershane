@@ -1,12 +1,12 @@
 import { ActionIcon, AppShell, Group, NavLink, Select, Text } from '@mantine/core';
-import { useMantineColorScheme } from '@mantine/core';
 import {
   IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
-  IconLanguage, IconLogout, IconMoon, IconSchool, IconSun, IconUser, IconUsers, IconUserShield,
+  IconLanguage, IconLogout, IconSchool, IconUser, IconUsers, IconUserShield,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/auth-context';
+import { ThemeToggle } from '../ui/ThemeToggle';
 
 const adminItems = [
   { to: '/', key: 'dashboard', icon: IconDashboard },
@@ -19,7 +19,6 @@ const adminItems = [
 
 export function AppSidebar({ collapsed, onToggle, onNavigate }) {
   const { t, i18n } = useTranslation();
-  const { colorScheme, setColorScheme } = useMantineColorScheme();
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -36,10 +35,6 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
     if (!language) return;
     localStorage.setItem('language', language);
     i18n.changeLanguage(language);
-  }
-
-  function toggleColorScheme() {
-    setColorScheme(colorScheme === 'dark' ? 'light' : 'dark');
   }
 
   function toggleLanguage() {
@@ -96,13 +91,7 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
               className="min-w-0 flex-1"
             />
           )}
-          <ActionIcon
-            variant="light"
-            onClick={toggleColorScheme}
-            aria-label={colorScheme === 'dark' ? t('light') : t('dark')}
-          >
-            {colorScheme === 'dark' ? <IconSun size={18} /> : <IconMoon size={18} />}
-          </ActionIcon>
+          <ThemeToggle />
         </Group>
         <NavLink
           label={collapsed ? undefined : t('logout')}

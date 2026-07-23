@@ -1,6 +1,8 @@
 export default {
   translation: {
-    appName: 'Dershane Yönetimi', login: 'Giriş yap', logout: 'Çıkış yap', email: 'E-posta', password: 'Şifre',
+    appName: 'Dershane Portalı', login: 'Giriş yap', loginSubtitle: 'Yönetim paneline giriş yapın',
+    forgotPassword: 'Şifremi unuttum?', forgotPasswordUnavailable: 'Şifre sıfırlama özelliği yakında aktif olacak.',
+    logout: 'Çıkış yap', email: 'E-posta', password: 'Şifre',
     dashboard: 'Panel', users: 'Kullanıcılar', roles: 'Roller', classes: 'Sınıflar', courses: 'Dersler',
     schedules: 'Ders Programı', mySchedule: 'Programım', profile: 'Profil', create: 'Oluştur', edit: 'Düzenle',
     delete: 'Sil', cancel: 'İptal', save: 'Kaydet', name: 'Ad', role: 'Rol', class: 'Sınıf',

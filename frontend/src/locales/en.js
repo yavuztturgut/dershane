@@ -1,6 +1,8 @@
 export default {
   translation: {
-    appName: 'Academy Admin', login: 'Sign in', logout: 'Log out', email: 'Email', password: 'Password',
+    appName: 'Academy Portal', login: 'Sign in', loginSubtitle: 'Sign in to the management panel',
+    forgotPassword: 'Forgot password?', forgotPasswordUnavailable: 'Password reset will be available soon.',
+    logout: 'Log out', email: 'Email', password: 'Password',
     dashboard: 'Dashboard', users: 'Users', roles: 'Roles', classes: 'Classes', courses: 'Courses',
     schedules: 'Schedules', mySchedule: 'My Schedule', profile: 'Profile', create: 'Create', edit: 'Edit',
     delete: 'Delete', cancel: 'Cancel', save: 'Save', name: 'Name', role: 'Role', class: 'Class',

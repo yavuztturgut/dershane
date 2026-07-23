@@ -22,3 +22,7 @@ export function notifyError(message) {
   notifications.show({ id, color: 'red', message: normalizedMessage, autoClose: ERROR_NOTIFICATION_COOLDOWN_MS });
   notifications.cleanQueue();
 }
+
+export function notifyInfo(message) {
+  notifications.show({ color: 'blue', message });
+}

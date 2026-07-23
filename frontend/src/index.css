@@ -32,3 +32,57 @@ button, input, select, textarea {
   --fc-event-bg-color: var(--mantine-color-blue-6);
   --fc-event-border-color: var(--mantine-color-blue-6);
 }
+
+.login-orb {
+  will-change: transform;
+}
+
+.login-orb-one {
+  animation: login-orb-float-one 10s ease-in-out infinite alternate;
+}
+
+.login-orb-two {
+  animation: login-orb-float-two 13s ease-in-out infinite alternate;
+}
+
+.login-orb-three {
+  animation: login-orb-float-three 11s ease-in-out infinite alternate;
+}
+
+@keyframes login-orb-float-one {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(-2rem, 1.5rem, 0) scale(1.06);
+  }
+}
+
+@keyframes login-orb-float-two {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(2.25rem, -1.75rem, 0) scale(1.04);
+  }
+}
+
+@keyframes login-orb-float-three {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  to {
+    transform: translate3d(-1.5rem, -2rem, 0) scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-orb-one,
+  .login-orb-two,
+  .login-orb-three {
+    animation: none;
+  }
+}
