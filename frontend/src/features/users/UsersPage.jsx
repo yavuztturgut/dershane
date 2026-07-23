@@ -1,6 +1,7 @@
-import { ActionIcon, Button, Checkbox, Group, Modal, Select, Table, TextInput } from '@mantine/core';
+import {
+  ActionIcon, Button, Checkbox, Group, Select, SimpleGrid, Table, TextInput,
+} from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -9,6 +10,8 @@ import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { EmptyState } from '../../components/ui/EmptyState';
+import { AppModal } from '../../components/ui/AppModal';
+import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
@@ -64,7 +67,7 @@ export function UsersPage() {
   function openCreate() { setEditingId(null); form.setValues(initialValues); setOpened(true); }
   function openEdit(id) { setEditingId(id); setOpened(true); }
   function confirmDelete(user) {
-    modals.openConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) });
+    openAppConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) });
   }
 
   if (usersQuery.isLoading || rolesQuery.isLoading || classesQuery.isLoading) return <PageLoader />;
@@ -73,9 +76,24 @@ export function UsersPage() {
     <>
       <PageHeader title={t('users')} onCreate={openCreate} createLabel={t('create')} />
       {!usersQuery.data?.length ? <EmptyState message={t('noData')} /> : <Table.ScrollContainer minWidth={760}><Table highlightOnHover withTableBorder><Table.Thead><Table.Tr><Table.Th>{t('name')}</Table.Th><Table.Th>{t('email')}</Table.Th><Table.Th>{t('role')}</Table.Th><Table.Th>{t('class')}</Table.Th><Table.Th>{t('active')}</Table.Th><Table.Th>{t('actions')}</Table.Th></Table.Tr></Table.Thead><Table.Tbody>{usersQuery.data.map((user) => <Table.Tr key={user.id}><Table.Td>{user.name}</Table.Td><Table.Td>{user.email}</Table.Td><Table.Td>{roleName(user.role_id)}</Table.Td><Table.Td>{className(user.class_id)}</Table.Td><Table.Td>{user.is_active ? 'Yes' : 'No'}</Table.Td><Table.Td><Group gap="xs"><ActionIcon variant="subtle" onClick={() => openEdit(user.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group></Table.Td></Table.Tr>)}</Table.Tbody></Table></Table.ScrollContainer>}
-      <Modal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')} centered>
-        {editingId && detailQuery.isLoading ? <PageLoader /> : <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}><Select label={t('role')} data={roleOptions} required {...form.getInputProps('role_id')} /><Select label={t('class')} data={classOptions} clearable mt="sm" {...form.getInputProps('class_id')} /><TextInput label={t('name')} required mt="sm" {...form.getInputProps('name')} /><TextInput label={t('email')} required mt="sm" {...form.getInputProps('email')} /><TextInput label={t('password')} required={!editingId} type="password" mt="sm" {...form.getInputProps('password')} /><Checkbox label={t('active')} mt="md" {...form.getInputProps('is_active', { type: 'checkbox' })} /><Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group></form>}
-      </Modal>
+      <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>
+        {editingId && detailQuery.isLoading ? <PageLoader /> : (
+          <form onSubmit={form.onSubmit((values) => saveMutation.mutate(values))}>
+            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+              <Select label={t('role')} data={roleOptions} required {...form.getInputProps('role_id')} />
+              <Select label={t('class')} data={classOptions} clearable {...form.getInputProps('class_id')} />
+            </SimpleGrid>
+            <TextInput label={t('name')} required mt="sm" {...form.getInputProps('name')} />
+            <TextInput label={t('email')} required mt="sm" {...form.getInputProps('email')} />
+            <TextInput label={t('password')} required={!editingId} type="password" mt="sm" {...form.getInputProps('password')} />
+            <Checkbox label={t('active')} mt="md" {...form.getInputProps('is_active', { type: 'checkbox' })} />
+            <Group justify="flex-end" mt="lg">
+              <Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button>
+              <Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button>
+            </Group>
+          </form>
+        )}
+      </AppModal>
     </>
   );
 }

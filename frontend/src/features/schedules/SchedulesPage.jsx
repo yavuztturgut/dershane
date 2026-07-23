@@ -1,11 +1,10 @@
 import {
-  ActionIcon, Alert, Button, Group, Modal, SegmentedControl, Select, SimpleGrid,
+  ActionIcon, Alert, Button, Group, SegmentedControl, Select, SimpleGrid,
   Stack, Text, Title,
 } from '@mantine/core';
 import { DateTimePicker } from '@mantine/dates';
 import { useForm } from '@mantine/form';
 import { useMediaQuery } from '@mantine/hooks';
-import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import {
   IconAlertCircle, IconChevronLeft, IconChevronRight, IconPlus,
@@ -20,6 +19,8 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/auth-context';
 import { PageLoader } from '../../components/ui/PageLoader';
+import { AppModal } from '../../components/ui/AppModal';
+import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
@@ -56,6 +57,15 @@ function ScheduleEvent({ event }) {
     <div className={styles.event}>
       <div className={styles.eventCourse}>{course_name}</div>
       <div className={styles.eventMeta}>{class_name} · {teacher_name}</div>
+    </div>
+  );
+}
+
+function ScheduleDetailRow({ label, value }) {
+  return (
+    <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 dark:border-dark-5 dark:bg-dark-8">
+      <Text size="xs" fw={700} tt="uppercase" c="dimmed">{label}</Text>
+      <Text size="sm" fw={600} mt={4}>{value}</Text>
     </div>
   );
 }
@@ -200,7 +210,7 @@ export function SchedulesPage() {
   }
 
   function confirmDelete() {
-    modals.openConfirmModal({
+    openAppConfirmModal({
       title: t('confirmDelete', { name: detailQuery.data?.course_name || '' }),
       children: t('deleteDescription'),
       labels: { confirm: t('delete'), cancel: t('cancel') },
@@ -278,22 +288,28 @@ export function SchedulesPage() {
         </div>
       </section>
 
-      <Modal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'editSchedule' : 'createSchedule')} centered={!isMobile} fullScreen={isMobile} size="lg">
+      <AppModal
+        opened={opened}
+        onClose={() => setOpened(false)}
+        title={t(!isAdmin ? 'scheduleDetails' : editingId ? 'editSchedule' : 'createSchedule')}
+        size="lg"
+      >
         {editingId && detailQuery.isLoading ? <PageLoader /> : !isAdmin && detailQuery.data ? (
           <Stack gap="sm">
-            <Text><b>{t('course')}:</b> {detailQuery.data.course_name}</Text>
-            <Text><b>{t('class')}:</b> {detailQuery.data.class_name}</Text>
-            <Text><b>{t('teacher')}:</b> {detailQuery.data.teacher_name}</Text>
-            <Text><b>{t('start')}:</b> {new Date(detailQuery.data.start_time).toLocaleString()}</Text>
-            <Text><b>{t('end')}:</b> {new Date(detailQuery.data.end_time).toLocaleString()}</Text>
+            <ScheduleDetailRow label={t('course')} value={detailQuery.data.course_name} />
+            <ScheduleDetailRow label={t('class')} value={detailQuery.data.class_name} />
+            <ScheduleDetailRow label={t('teacher')} value={detailQuery.data.teacher_name} />
+            <ScheduleDetailRow label={t('start')} value={new Date(detailQuery.data.start_time).toLocaleString()} />
+            <ScheduleDetailRow label={t('end')} value={new Date(detailQuery.data.end_time).toLocaleString()} />
           </Stack>
         ) : (
           <form onSubmit={form.onSubmit(saveSchedule)}>
-            <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <SimpleGrid cols={{ base: 1, sm: 3 }}>
               <Select label={t('course')} data={courseOptions} required {...form.getInputProps('course_id')} />
               <Select label={t('class')} data={classOptions} required {...form.getInputProps('class_id')} />
               <Select label={t('teacher')} data={teacherOptions} required {...form.getInputProps('teacher_id')} />
-              <div />
+            </SimpleGrid>
+            <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
               <DateTimePicker label={t('start')} required {...form.getInputProps('start_time')} />
               <DateTimePicker label={t('end')} required {...form.getInputProps('end_time')} />
             </SimpleGrid>
@@ -306,7 +322,7 @@ export function SchedulesPage() {
             </Group>
           </form>
         )}
-      </Modal>
+      </AppModal>
     </div>
   );
 }

@@ -75,8 +75,8 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
       </div>
 
       <div className="border-t border-gray-200 p-3 dark:border-dark-5">
-        {!collapsed && <Text size="sm" fw={600} truncate>{user.name}</Text>}
-        {!collapsed && <Text size="xs" c="dimmed" mb="sm">{user.role_name}</Text>}
+        {!collapsed && <Text size="sm" fw={600} mb={user.role_name === 'admin' ? 0 : 'sm'} truncate>{user.name}</Text>}
+        {!collapsed && user.role_name === 'admin' && <Text size="xs" c="dimmed" mb="sm">{user.role_name}</Text>}
         <Group gap="xs" wrap="nowrap">
           {collapsed ? (
             <ActionIcon variant="light" onClick={toggleLanguage} aria-label={t('language')}>

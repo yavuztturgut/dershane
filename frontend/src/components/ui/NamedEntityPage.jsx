@@ -1,6 +1,5 @@
-import { ActionIcon, Button, Group, Modal, Table, TextInput } from '@mantine/core';
+import { ActionIcon, Button, Group, Table, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { modals } from '@mantine/modals';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
@@ -12,6 +11,8 @@ import { queryClient } from '../../lib/query-client';
 import { PageHeader } from './PageHeader';
 import { PageLoader } from './PageLoader';
 import { EmptyState } from './EmptyState';
+import { AppModal } from './AppModal';
+import { openAppConfirmModal } from './app-confirm-modal';
 
 export function NamedEntityPage({ api, queryKey, titleKey }) {
   const { t } = useTranslation();
@@ -61,7 +62,7 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
   }
 
   function confirmDelete(item) {
-    modals.openConfirmModal({
+    openAppConfirmModal({
       title: t('confirmDelete', { name: item.name }),
       children: t('deleteDescription'),
       labels: { confirm: t('delete'), cancel: t('cancel') },
@@ -88,14 +89,14 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
           </Table>
         </Table.ScrollContainer>
       )}
-      <Modal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')} fullScreen={false} centered>
+      <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>
         {editingId && detailQuery.isLoading ? <PageLoader /> : (
           <form onSubmit={form.onSubmit(saveEntity)}>
             <TextInput label={t('name')} required {...form.getInputProps('name')} />
             <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group>
           </form>
         )}
-      </Modal>
+      </AppModal>
     </>
   );
 }
