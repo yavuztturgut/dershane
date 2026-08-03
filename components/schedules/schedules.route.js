@@ -5,8 +5,11 @@ const schedulesController = require('./schedules.controller');
 const authMiddleware = require('../../middlewares/auth-middleware');
 const requireRole = require('../../middlewares/role-middleware');
 const asyncHandler = require('../../middlewares/async-handler');
+const attendanceController = require('../attendance/attendance.controller');
 
 router.get('/', authMiddleware, asyncHandler(schedulesController.getSchedules));
+router.get('/:id/attendance', authMiddleware, asyncHandler(attendanceController.getScheduleAttendance));
+router.put('/:id/attendance', authMiddleware, asyncHandler(attendanceController.saveScheduleAttendance));
 router.get('/:id', authMiddleware, asyncHandler(schedulesController.getScheduleById));
 router.post('/', authMiddleware, requireRole('admin'), asyncHandler(schedulesController.createSchedule));
 router.put('/:id', authMiddleware, requireRole('admin'), asyncHandler(schedulesController.updateSchedule));

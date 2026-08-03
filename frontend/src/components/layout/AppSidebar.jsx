@@ -1,11 +1,11 @@
 import { ActionIcon, AppShell, Group, NavLink, Select, Text } from '@mantine/core';
 import {
   IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
-  IconLanguage, IconLogout, IconSchool, IconUser, IconUsers, IconUserShield,
+  IconLanguage, IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../features/auth/auth-context';
+import { useAuth } from '../../features/auth/use-auth';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 const adminItems = [
@@ -15,6 +15,7 @@ const adminItems = [
   { to: '/classes', key: 'classes', icon: IconSchool },
   { to: '/courses', key: 'courses', icon: IconBook2 },
   { to: '/schedules', key: 'schedules', icon: IconCalendarEvent },
+  { to: '/attendance', key: 'attendance', icon: IconChecklist },
 ];
 
 export function AppSidebar({ collapsed, onToggle, onNavigate }) {
@@ -22,9 +23,10 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const items = user.role_name === 'admin'
-    ? adminItems
-    : [{ to: '/schedules', key: 'mySchedule', icon: IconCalendarEvent }];
+  const items = user.role_name === 'admin' ? adminItems : [
+    { to: '/schedules', key: 'mySchedule', icon: IconCalendarEvent },
+    ...(user.role_name === 'student' ? [{ to: '/attendance', key: 'attendance', icon: IconChecklist }] : []),
+  ];
 
   async function handleLogout() {
     await logout();
@@ -45,7 +47,7 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
     <AppShell.Navbar className="flex flex-col border-r border-gray-200 dark:border-dark-5">
       <Group className="min-h-16 border-b border-gray-200 px-4 dark:border-dark-5" justify="space-between">
         {!collapsed && <Text fw={700}>{t('appName')}</Text>}
-        <ActionIcon variant="subtle" onClick={onToggle} aria-label="Toggle sidebar" visibleFrom="sm">
+        <ActionIcon variant="subtle" onClick={onToggle} aria-label={t('toggleSidebar')} visibleFrom="sm">
           {collapsed ? <IconChevronRight size={18} /> : <IconChevronLeft size={18} />}
         </ActionIcon>
       </Group>

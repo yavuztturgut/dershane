@@ -2,13 +2,28 @@ const schedulesRepository = require('./schedules.repository');
 const createHttpError = require('../../utils/create-http-error');
 
 function getLocalDateTime(value) {
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
     if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(value)) return null;
     const date = new Date(value.replace(' ', 'T'));
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
-async function getSchedules(user) {
-    return schedulesRepository.findSchedulesForUser(user);
+async function getSchedules(user, filters) {
+    return schedulesRepository.findSchedulesForUser(user, filters);
+}
+
+async function validateSchedule(data, excludeId) {
+    const startDate = getLocalDateTime(data.start_time);
+    const endDate = getLocalDateTime(data.end_time);
+    if (!startDate || !endDate || endDate <= startDate) {
+        throw createHttpError('end_time must be greater than start_time', 400, 'SCHEDULE_END_BEFORE_START');
+    }
+    const isTeacher = await schedulesRepository.isActiveTeacher(data.teacher_id);
+    if (!isTeacher) throw createHttpError('teacher_id must belong to an active teacher', 400, 'INVALID_TEACHER');
+    const conflict = await schedulesRepository.findConflict({ ...data, excludeId });
+    if (conflict) {
+        throw createHttpError('Schedule conflicts with an existing lesson', 409, 'SCHEDULE_CONFLICT', conflict);
+    }
 }
 
 async function getScheduleById(id, user) {
@@ -28,17 +43,7 @@ async function createSchedule(data) {
         throw createHttpError('course_id, class_id, teacher_id, start_time and end_time are required', 400, 'SCHEDULE_REQUIRED_FIELDS');
     }
 
-    const startDate = getLocalDateTime(start_time);
-    const endDate = getLocalDateTime(end_time);
-    if (!startDate || !endDate || endDate <= startDate) {
-        throw createHttpError('end_time must be greater than start_time', 400, 'SCHEDULE_END_BEFORE_START');
-    }
-
-    const isTeacher = await schedulesRepository.isActiveTeacher(teacher_id);
-
-    if (!isTeacher) {
-        throw createHttpError('teacher_id must belong to an active teacher', 400, 'INVALID_TEACHER');
-    }
+    await validateSchedule({ course_id, class_id, teacher_id, start_time, end_time });
 
     return schedulesRepository.insertSchedule({
         course_id,
@@ -56,12 +61,14 @@ async function updateSchedule(id, data) {
         throw createHttpError('Schedule not found', 404);
     }
 
-    const finalTeacherId = data.teacher_id || existingSchedule.teacher_id;
-    const isTeacher = await schedulesRepository.isActiveTeacher(finalTeacherId);
-
-    if (!isTeacher) {
-        throw createHttpError('teacher_id must belong to an active teacher', 400);
-    }
+    const finalData = {
+        course_id: data.course_id || existingSchedule.course_id,
+        class_id: data.class_id || existingSchedule.class_id,
+        teacher_id: data.teacher_id || existingSchedule.teacher_id,
+        start_time: data.start_time || existingSchedule.start_time,
+        end_time: data.end_time || existingSchedule.end_time
+    };
+    await validateSchedule(finalData, id);
 
     return schedulesRepository.updateScheduleById(id, data);
 }

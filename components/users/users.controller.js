@@ -1,7 +1,7 @@
 const usersService = require('./users.service');
 
 async function getUsers(req, res) {
-    const users = await usersService.getUsers();
+    const users = await usersService.getUsers(req.query);
     res.json(users);
 }
 

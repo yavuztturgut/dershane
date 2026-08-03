@@ -1,11 +1,12 @@
 export default {
   translation: {
     appName: 'Dershane Portalı', login: 'Giriş yap', loginSubtitle: 'Yönetim paneline giriş yapın',
-    forgotPassword: 'Şifremi unuttum?', forgotPasswordUnavailable: 'Şifre sıfırlama özelliği yakında aktif olacak.',
+    forgotPassword: 'Şifremi unuttum?', forgotPasswordHelp: 'E-posta adresinizi girin; güvenli sıfırlama bağlantısını gönderelim.', sendResetLink: 'Sıfırlama bağlantısı gönder', resetEmailSent: 'Hesap mevcutsa sıfırlama e-postası gönderildi.', backToLogin: 'Girişe dön',
     logout: 'Çıkış yap', email: 'E-posta', password: 'Şifre',
     dashboard: 'Panel', users: 'Kullanıcılar', roles: 'Roller', classes: 'Sınıflar', courses: 'Dersler',
     schedules: 'Ders Programı', mySchedule: 'Programım', profile: 'Profil', create: 'Oluştur', edit: 'Düzenle',
-    delete: 'Sil', cancel: 'İptal', save: 'Kaydet', name: 'Ad', role: 'Rol', class: 'Sınıf',
+    delete: 'Sil', cancel: 'İptal', close: 'Kapat', save: 'Kaydet', name: 'Ad', role: 'Rol', class: 'Sınıf',
+    unsavedChanges: 'Kaydedilmemiş değişiklikler', unsavedChangesDescription: 'Yaptığınız değişiklikler kaybolacak. Vazgeçmek istiyor musunuz?', discard: 'Vazgeç', continueEditing: 'Düzenlemeye devam et',
     active: 'Aktif', teacher: 'Öğretmen', course: 'Ders', start: 'Başlangıç', end: 'Bitiş', actions: 'İşlemler',
     noData: 'Kayıt bulunamadı.', confirmDelete: '{{name}} silinsin mi?', deleteDescription: 'Bu işlem geri alınamaz.',
     created: 'Başarıyla oluşturuldu.', updated: 'Başarıyla güncellendi.', deleted: 'Başarıyla silindi.',
@@ -16,6 +17,10 @@ export default {
     unexpectedError: 'Bir hata oluştu', unexpectedErrorMessage: 'Uygulama bu ekranı görüntüleyemedi.', reload: 'Uygulamayı yenile',
     today: 'Bugün', previous: 'Önceki', next: 'Sonraki', day: 'Gün', week: 'Hafta', month: 'Ay',
     filterCourse: 'Derse göre filtrele', filterClass: 'Sınıfa göre filtrele', filterTeacher: 'Öğretmene göre filtrele',
+    retry: 'Tekrar dene', search: 'Ad veya e-posta ara', yes: 'Evet', no: 'Hayır', sort: 'Sırala', ascending: 'Artan', descending: 'Azalan', createdOrder: 'Oluşturma sırası', systemRole: 'Sistem rolü', toggleSidebar: 'Kenar çubuğunu aç/kapat',
+    resetPassword: 'Şifreyi sıfırla', newPassword: 'Yeni şifre', confirmPassword: 'Şifre tekrarı', currentPassword: 'Mevcut şifre', changePassword: 'Şifre değiştir', passwordChanged: 'Şifre değiştirildi. Yeniden giriş yapın.', passwordResetSuccess: 'Şifreniz sıfırlandı.',
+    attendance: 'Yoklama', student: 'Öğrenci', status: 'Durum', total: 'Toplam', saveAttendance: 'Yoklamayı kaydet', attendanceSaved: 'Yoklama kaydedildi.', noStudents: 'Bu sınıfta aktif öğrenci bulunamadı.', teacherAttendanceHint: 'Yoklama almak için programınızdaki bir dersi açın.', notRecorded: 'Kaydedilmedi', markAllPresent: 'Tümünü Var', markPresentFor: '{{name}} için Var',
+    attendanceStatus: { present: 'Var', absent: 'Yok', late: 'Geç', excused: 'İzinli' },
     errors: {
       GENERIC: 'Bir hata oluştu. Lütfen tekrar deneyin.', REQUIRED: 'Bu alan zorunludur.', INVALID_EMAIL: 'Geçerli bir e-posta adresi girin.',
       TOKEN_REQUIRED: 'Oturum bilgisi gerekli.', INVALID_TOKEN: 'Oturum geçersiz.', UNAUTHORIZED: 'Oturum açmanız gerekiyor.', FORBIDDEN: 'Bu işlem için yetkiniz yok.',
@@ -24,6 +29,7 @@ export default {
       SCHEDULE_END_BEFORE_START: 'Bitiş zamanı başlangıçtan sonra olmalıdır.', SCHEDULE_REQUIRED_FIELDS: 'Ders programı için tüm alanlar zorunludur.', INVALID_TEACHER: 'Seçilen öğretmen aktif bir öğretmen olmalıdır.', SCHEDULE_NOT_FOUND: 'Ders programı bulunamadı.',
       USER_NOT_FOUND: 'Kullanıcı bulunamadı.', ROLE_NOT_FOUND: 'Rol bulunamadı.', CLASS_NOT_FOUND: 'Sınıf bulunamadı.', COURSE_NOT_FOUND: 'Ders bulunamadı.', REQUIRED_FIELDS: 'Zorunlu alanlar eksik.',
       ROLE_NAME_REQUIRED: 'Rol adı zorunludur.', CLASS_NAME_REQUIRED: 'Sınıf adı zorunludur.', COURSE_NAME_REQUIRED: 'Ders adı zorunludur.', AUTH_CREDENTIALS_REQUIRED: 'E-posta ve şifre zorunludur.', INVALID_CREDENTIALS: 'E-posta veya şifre hatalı.', USER_INACTIVE: 'Bu kullanıcı pasif durumdadır.', INTERNAL_ERROR: 'Sunucuda bir hata oluştu.', REQUEST_FAILED: 'İstek tamamlanamadı.', LOGOUT_FAILED: 'Çıkış yapılamadı.',
+      PASSWORD_TOO_SHORT: 'Şifre en az 8 karakter olmalıdır.', PASSWORD_MISMATCH: 'Şifreler eşleşmiyor.', INVALID_CURRENT_PASSWORD: 'Mevcut şifre hatalı.', RESET_TOKEN_INVALID: 'Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş.', INVALID_PROFILE: 'Geçerli bir ad ve e-posta girin.', STUDENT_CLASS_REQUIRED: 'Öğrenciler için sınıf zorunludur.', SYSTEM_ROLES_FIXED: 'Sistem rolleri değiştirilemez.', SCHEDULE_CONFLICT: 'Bu öğretmen veya sınıfın aynı zaman aralığında başka bir dersi var.', TOO_MANY_REQUESTS: 'Çok fazla istek gönderildi. Lütfen bekleyip tekrar deneyin.', ATTENDANCE_NOT_OPEN: 'Yoklama ders başladığında açılır.', ATTENDANCE_LOCKED: 'Yoklama kilitli. Değişiklik için yöneticiye başvurun.', INVALID_ATTENDANCE: 'Yoklama verisi geçersiz.', INVALID_ATTENDANCE_STUDENT: 'Seçilen öğrenci bu sınıfa ait değil.',
     },
   },
 };

@@ -16,39 +16,15 @@ async function getRoleById(id) {
 }
 
 async function createRole(data) {
-    const { name } = data;
-
-    if (!name) {
-        throw createHttpError('Role name is required', 400);
-    }
-
-    return rolesRepository.insertRole(name);
+    throw createHttpError('System roles are fixed', 405, 'SYSTEM_ROLES_FIXED');
 }
 
 async function updateRole(id, data) {
-    const { name } = data;
-
-    if (!name) {
-        throw createHttpError('Role name is required', 400);
-    }
-
-    const role = await rolesRepository.updateRoleById(id, name);
-
-    if (!role) {
-        throw createHttpError('Role not found', 404);
-    }
-
-    return role;
+    throw createHttpError('System roles are fixed', 405, 'SYSTEM_ROLES_FIXED');
 }
 
 async function deleteRole(id) {
-    const role = await rolesRepository.deleteRoleById(id);
-
-    if (!role) {
-        throw createHttpError('Role not found', 404);
-    }
-
-    return role;
+    throw createHttpError('System roles are fixed', 405, 'SYSTEM_ROLES_FIXED');
 }
 
 module.exports = {

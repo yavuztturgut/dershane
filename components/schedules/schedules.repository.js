@@ -21,24 +21,64 @@ function buildScheduleSelect() {
       `;
 }
 
-async function findSchedulesForUser(user) {
+async function findSchedulesForUser(user, filters = {}) {
     let query = buildScheduleSelect();
     const params = [];
+    const conditions = [];
 
     if (user.role_name === 'teacher') {
-        query += ' WHERE s.teacher_id = $1';
         params.push(user.id);
+        conditions.push(`s.teacher_id = $${params.length}`);
     }
 
     if (user.role_name === 'student') {
-        query += ' WHERE s.class_id = $1';
         params.push(user.class_id);
+        conditions.push(`s.class_id = $${params.length}`);
     }
+
+    if (!['admin', 'teacher', 'student'].includes(user.role_name)) {
+        conditions.push('1 = 0');
+    }
+
+    if (filters.start) {
+        params.push(filters.start);
+        conditions.push(`s.end_time > $${params.length}`);
+    }
+    if (filters.end) {
+        params.push(filters.end);
+        conditions.push(`s.start_time < $${params.length}`);
+    }
+
+    if (user.role_name === 'admin') {
+        for (const [column, value] of [['course_id', filters.course_id], ['class_id', filters.class_id], ['teacher_id', filters.teacher_id]]) {
+            if (value) {
+                params.push(value);
+                conditions.push(`s.${column} = $${params.length}`);
+            }
+        }
+    }
+
+    if (conditions.length) query += ` WHERE ${conditions.join(' AND ')}`;
 
     query += ' ORDER BY s.start_time ASC';
 
     const result = await pool.query(query, params);
     return result.rows;
+}
+
+async function findConflict({ teacher_id, class_id, start_time, end_time, excludeId }) {
+    const params = [teacher_id, class_id, start_time, end_time];
+    let query = `${buildScheduleSelect()}
+        WHERE (s.teacher_id = $1 OR s.class_id = $2)
+          AND s.start_time < $4
+          AND s.end_time > $3`;
+    if (excludeId) {
+        params.push(excludeId);
+        query += ' AND s.id <> $5';
+    }
+    query += ' ORDER BY s.start_time ASC LIMIT 1';
+    const result = await pool.query(query, params);
+    return result.rows[0];
 }
 
 async function findScheduleByIdForUser(id, user) {
@@ -168,4 +208,5 @@ module.exports = {
     insertSchedule,
     updateScheduleById,
     deleteScheduleById
+    ,findConflict
 };

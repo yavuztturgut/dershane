@@ -14,12 +14,13 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import trLocale from '@fullcalendar/core/locales/tr';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../auth/auth-context';
+import { useAuth } from '../auth/use-auth';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { AppModal } from '../../components/ui/AppModal';
+import { DualPanelModal } from '../../components/ui/DualPanelModal';
 import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
@@ -29,7 +30,8 @@ import { classesApi } from '../classes/classes.api';
 import { rolesApi } from '../roles/roles.api';
 import { usersApi } from '../users/users.api';
 import { schedulesApi } from './schedules.api';
-import { filterSchedules, getCourseColor } from './schedule.utils';
+import { getCourseColor } from './schedule.utils';
+import { AttendanceEditor } from '../attendance/AttendanceEditor';
 import styles from './SchedulesPage.module.css';
 
 const initialValues = {
@@ -74,14 +76,28 @@ export function SchedulesPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user.role_name === 'admin';
+  const canManageAttendance = isAdmin || user.role_name === 'teacher';
   const isMobile = useMediaQuery('(max-width: 48rem)');
   const calendarRef = useRef(null);
   const saveRequestRef = useRef(false);
+  const attendanceEditorRef = useRef(null);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [attendanceDirty, setAttendanceDirty] = useState(false);
+  const [attendanceSaving, setAttendanceSaving] = useState(false);
+  const [attendanceCanSave, setAttendanceCanSave] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState('details');
   const [activeView, setActiveView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
   const [dateTitle, setDateTitle] = useState('');
   const [filters, setFilters] = useState({ courseId: '', classId: '', teacherId: '' });
+  const [visibleRange, setVisibleRange] = useState(() => {
+    const start = new Date();
+    start.setDate(start.getDate() - 7);
+    const end = new Date();
+    end.setDate(end.getDate() + 35);
+    return { start: start.toISOString(), end: end.toISOString() };
+  });
   const form = useForm({
     initialValues,
     validate: {
@@ -99,7 +115,14 @@ export function SchedulesPage() {
       },
     },
   });
-  const schedulesQuery = useQuery({ queryKey: ['schedules'], queryFn: schedulesApi.getAll });
+  const setFormValues = form.setValues;
+  const setFormInitialValues = form.setInitialValues;
+  const resetFormDirty = form.resetDirty;
+  const scheduleParams = {
+    ...visibleRange,
+    ...(isAdmin ? { course_id: filters.courseId || undefined, class_id: filters.classId || undefined, teacher_id: filters.teacherId || undefined } : {}),
+  };
+  const schedulesQuery = useQuery({ queryKey: ['schedules', scheduleParams], queryFn: () => schedulesApi.getAll(scheduleParams) });
   const detailQuery = useQuery({
     queryKey: ['schedules', editingId],
     queryFn: () => schedulesApi.getById(editingId),
@@ -118,15 +141,18 @@ export function SchedulesPage() {
 
   useEffect(() => {
     if (detailQuery.data && isAdmin) {
-      form.setValues({
+      const values = {
         course_id: String(detailQuery.data.course_id),
         class_id: String(detailQuery.data.class_id),
         teacher_id: String(detailQuery.data.teacher_id),
         start_time: new Date(detailQuery.data.start_time),
         end_time: new Date(detailQuery.data.end_time),
-      });
+      };
+      setFormValues(values);
+      setFormInitialValues(values);
+      resetFormDirty(values);
     }
-  }, [detailQuery.data, isAdmin]);
+  }, [detailQuery.data, isAdmin, resetFormDirty, setFormInitialValues, setFormValues]);
 
   const saveMutation = useMutation({
     mutationFn: (values) => {
@@ -143,10 +169,21 @@ export function SchedulesPage() {
     },
     onSuccess: () => {
       notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
-      setOpened(false);
       queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      if (editingId) {
+        form.resetDirty();
+        setIsEditing(false);
+        queryClient.invalidateQueries({ queryKey: ['schedules', editingId] });
+      } else {
+        setOpened(false);
+      }
     },
-    onError: (error) => notifyError(getErrorMessage(error)),
+    onError: (error) => {
+      const conflict = error.response?.data?.errorCode === 'SCHEDULE_CONFLICT' && error.response.data.details;
+      notifyError(conflict
+        ? `${getErrorMessage(error)} ${conflict.course_name} · ${new Date(conflict.start_time).toLocaleString()}–${new Date(conflict.end_time).toLocaleTimeString()}`
+        : getErrorMessage(error));
+    },
     onSettled: () => { saveRequestRef.current = false; },
   });
   const deleteMutation = useMutation({
@@ -164,7 +201,7 @@ export function SchedulesPage() {
   const classOptions = classesQuery.data?.map((classItem) => ({ value: String(classItem.id), label: classItem.name })) || [];
   const teacherOptions = usersQuery.data?.filter((item) => item.role_id === teacherRoleId && item.is_active)
     .map((item) => ({ value: String(item.id), label: item.name })) || [];
-  const events = useMemo(() => filterSchedules(schedulesQuery.data || [], filters).map((schedule) => ({
+  const events = useMemo(() => (schedulesQuery.data || []).map((schedule) => ({
     id: String(schedule.id),
     title: schedule.course_name,
     start: schedule.start_time,
@@ -172,7 +209,7 @@ export function SchedulesPage() {
     backgroundColor: getCourseColor(schedule.course_id),
     borderColor: getCourseColor(schedule.course_id),
     extendedProps: schedule,
-  })), [schedulesQuery.data, filters]);
+  })), [schedulesQuery.data]);
 
   function changeView(view) {
     setActiveView(view);
@@ -185,12 +222,17 @@ export function SchedulesPage() {
 
   function openCreate() {
     setEditingId(null);
+    setIsEditing(true);
     form.setValues(initialValues);
+    form.resetDirty(initialValues);
     setOpened(true);
   }
 
   function openEdit(id) {
     setEditingId(id);
+    setIsEditing(false);
+    setAttendanceDirty(false);
+    setMobilePanel('details');
     setOpened(true);
   }
 
@@ -198,7 +240,9 @@ export function SchedulesPage() {
     if (!isAdmin) return;
 
     setEditingId(null);
+    setIsEditing(true);
     form.setValues({ ...initialValues, start_time: selection.start, end_time: selection.end });
+    form.resetDirty();
     selection.view.calendar.unselect();
     setOpened(true);
   }
@@ -217,6 +261,42 @@ export function SchedulesPage() {
       confirmProps: { color: 'red' },
       onConfirm: () => deleteMutation.mutate(editingId),
     });
+  }
+
+  const handleAttendanceDirty = useCallback((dirty) => setAttendanceDirty(dirty), []);
+  const handleAttendanceSaving = useCallback((saving) => setAttendanceSaving(saving), []);
+  const handleAttendanceCanSave = useCallback((canSave) => setAttendanceCanSave(canSave), []);
+
+  function closeImmediately() {
+    setOpened(false);
+    setIsEditing(false);
+    setAttendanceDirty(false);
+    setMobilePanel('details');
+    form.resetDirty();
+  }
+
+  function confirmDiscard(onConfirm) {
+    openAppConfirmModal({
+      title: t('unsavedChanges'),
+      children: t('unsavedChangesDescription'),
+      labels: { confirm: t('discard'), cancel: t('continueEditing') },
+      confirmProps: { color: 'red' },
+      onConfirm,
+    });
+  }
+
+  function requestClose() {
+    const scheduleDirty = Boolean(isEditing && form.isDirty());
+    if (scheduleDirty || attendanceDirty) confirmDiscard(closeImmediately);
+    else closeImmediately();
+  }
+
+  function requestExitEditing() {
+    if (form.isDirty() || attendanceDirty) confirmDiscard(() => {
+      form.reset();
+      setIsEditing(false);
+    });
+    else setIsEditing(false);
   }
 
   if (schedulesQuery.isLoading) return <PageLoader />;
@@ -282,47 +362,94 @@ export function SchedulesPage() {
             select={handleSelect}
             eventClick={(info) => openEdit(Number(info.event.id))}
             eventContent={(info) => <ScheduleEvent event={info.event} />}
-            datesSet={(info) => setDateTitle(info.view.title)}
+            datesSet={(info) => {
+              setDateTitle(info.view.title);
+              setVisibleRange((current) => current.start === info.startStr && current.end === info.endStr ? current : { start: info.startStr, end: info.endStr });
+            }}
             height="auto"
           />
         </div>
       </section>
 
-      <AppModal
-        opened={opened}
-        onClose={() => setOpened(false)}
-        title={t(!isAdmin ? 'scheduleDetails' : editingId ? 'editSchedule' : 'createSchedule')}
-        size="lg"
-      >
-        {editingId && detailQuery.isLoading ? <PageLoader /> : !isAdmin && detailQuery.data ? (
-          <Stack gap="sm">
-            <ScheduleDetailRow label={t('course')} value={detailQuery.data.course_name} />
-            <ScheduleDetailRow label={t('class')} value={detailQuery.data.class_name} />
-            <ScheduleDetailRow label={t('teacher')} value={detailQuery.data.teacher_name} />
-            <ScheduleDetailRow label={t('start')} value={new Date(detailQuery.data.start_time).toLocaleString()} />
-            <ScheduleDetailRow label={t('end')} value={new Date(detailQuery.data.end_time).toLocaleString()} />
-          </Stack>
-        ) : (
-          <form onSubmit={form.onSubmit(saveSchedule)}>
-            <SimpleGrid cols={{ base: 1, sm: 3 }}>
-              <Select label={t('course')} data={courseOptions} required {...form.getInputProps('course_id')} />
-              <Select label={t('class')} data={classOptions} required {...form.getInputProps('class_id')} />
-              <Select label={t('teacher')} data={teacherOptions} required {...form.getInputProps('teacher_id')} />
-            </SimpleGrid>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
-              <DateTimePicker label={t('start')} required {...form.getInputProps('start_time')} />
-              <DateTimePicker label={t('end')} required {...form.getInputProps('end_time')} />
-            </SimpleGrid>
-            <Group justify="space-between" mt="xl">
-              {editingId ? <Button color="red" variant="light" onClick={confirmDelete} loading={deleteMutation.isPending}>{t('delete')}</Button> : <span />}
-              <Group>
-                <Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button>
+      {editingId && canManageAttendance ? (
+        <DualPanelModal
+          opened={opened}
+          onClose={requestClose}
+          leftTitle={t('scheduleDetails')}
+          rightTitle={t('attendance')}
+          activeTab={mobilePanel}
+          onActiveTabChange={setMobilePanel}
+          closeLabel={t('close')}
+          leftContent={detailQuery.isLoading ? <PageLoader /> : detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : isEditing ? (
+            <form id="schedule-edit-form" onSubmit={form.onSubmit(saveSchedule)}>
+              <Stack gap="md">
+                <Select label={t('course')} data={courseOptions} required {...form.getInputProps('course_id')} />
+                <Select label={t('class')} data={classOptions} required {...form.getInputProps('class_id')} />
+                <Select label={t('teacher')} data={teacherOptions} required {...form.getInputProps('teacher_id')} />
+                <DateTimePicker label={t('start')} required {...form.getInputProps('start_time')} />
+                <DateTimePicker label={t('end')} required {...form.getInputProps('end_time')} />
+              </Stack>
+            </form>
+          ) : detailQuery.data ? (
+            <Stack gap="sm">
+              <ScheduleDetailRow label={t('course')} value={detailQuery.data.course_name} />
+              <ScheduleDetailRow label={t('class')} value={detailQuery.data.class_name} />
+              <ScheduleDetailRow label={t('teacher')} value={detailQuery.data.teacher_name} />
+              <ScheduleDetailRow label={t('start')} value={new Date(detailQuery.data.start_time).toLocaleString()} />
+              <ScheduleDetailRow label={t('end')} value={new Date(detailQuery.data.end_time).toLocaleString()} />
+            </Stack>
+          ) : null}
+          leftFooter={isAdmin && (isEditing ? (
+            <Group justify="space-between">
+              <Button color="red" variant="light" onClick={confirmDelete} loading={deleteMutation.isPending}>{t('delete')}</Button>
+              <Group><Button variant="default" onClick={requestExitEditing}>{t('cancel')}</Button><Button type="submit" form="schedule-edit-form" loading={saveMutation.isPending}>{t('save')}</Button></Group>
+            </Group>
+          ) : <Group justify="flex-end"><Button onClick={() => setIsEditing(true)}>{t('edit')}</Button></Group>)}
+          rightContent={(
+            <AttendanceEditor
+              ref={attendanceEditorRef}
+              scheduleId={editingId}
+              onDirtyChange={handleAttendanceDirty}
+              onSavingChange={handleAttendanceSaving}
+              onCanSaveChange={handleAttendanceCanSave}
+            />
+          )}
+          rightFooter={<Group justify="flex-end"><Button disabled={!attendanceCanSave} onClick={() => attendanceEditorRef.current?.save()} loading={attendanceSaving}>{t('saveAttendance')}</Button></Group>}
+        />
+      ) : (
+        <AppModal
+          opened={opened}
+          onClose={requestClose}
+          title={t(editingId ? 'scheduleDetails' : 'createSchedule')}
+          size="lg"
+        >
+          {editingId && detailQuery.isLoading ? <PageLoader /> : detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : editingId && detailQuery.data ? (
+            <Stack gap="sm">
+              <ScheduleDetailRow label={t('course')} value={detailQuery.data.course_name} />
+              <ScheduleDetailRow label={t('class')} value={detailQuery.data.class_name} />
+              <ScheduleDetailRow label={t('teacher')} value={detailQuery.data.teacher_name} />
+              <ScheduleDetailRow label={t('start')} value={new Date(detailQuery.data.start_time).toLocaleString()} />
+              <ScheduleDetailRow label={t('end')} value={new Date(detailQuery.data.end_time).toLocaleString()} />
+            </Stack>
+          ) : (
+            <form onSubmit={form.onSubmit(saveSchedule)}>
+              <SimpleGrid cols={{ base: 1, sm: 3 }}>
+                <Select label={t('course')} data={courseOptions} required {...form.getInputProps('course_id')} />
+                <Select label={t('class')} data={classOptions} required {...form.getInputProps('class_id')} />
+                <Select label={t('teacher')} data={teacherOptions} required {...form.getInputProps('teacher_id')} />
+              </SimpleGrid>
+              <SimpleGrid cols={{ base: 1, sm: 2 }} mt="md">
+                <DateTimePicker label={t('start')} required {...form.getInputProps('start_time')} />
+                <DateTimePicker label={t('end')} required {...form.getInputProps('end_time')} />
+              </SimpleGrid>
+              <Group justify="flex-end" mt="xl">
+                <Button variant="default" onClick={requestClose}>{t('cancel')}</Button>
                 <Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button>
               </Group>
-            </Group>
-          </form>
-        )}
-      </AppModal>
+            </form>
+          )}
+        </AppModal>
+      )}
     </div>
   );
 }

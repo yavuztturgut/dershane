@@ -1,17 +1,23 @@
 const jwt = require('jsonwebtoken');
+const authRepository = require('../components/auth/auth.repository');
 
-const authMiddleware = (req, res, next) => {
+const authMiddleware = async (req, res, next) => {
     const token = req.cookies.access_token;
 
     if (!token) {
-        return res.status(401).json({ error: 'Token is required' });
+        return res.status(401).json({ error: 'Token is required', errorCode: 'TOKEN_REQUIRED' });
     }
 
     try {
-        req.user = jwt.verify(token, process.env.JWT_SECRET);
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await authRepository.findAuthStateById(payload.id);
+        if (!user || !user.is_active || !['admin', 'teacher', 'student'].includes(user.role_name) || user.token_version !== payload.token_version) {
+            return res.status(401).json({ error: 'Invalid token', errorCode: 'INVALID_TOKEN' });
+        }
+        req.user = user;
         next();
     } catch (error) {
-        return res.status(401).json({ error: 'Invalid token' });
+        return res.status(401).json({ error: 'Invalid token', errorCode: 'INVALID_TOKEN' });
     }
 };
 

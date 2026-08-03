@@ -37,9 +37,13 @@
 - Admin can use all CRUD features and sees the dashboard.
 - Teacher and student can only access their schedule and profile. The backend applies the schedule filter.
 - Schedules are rendered with FullCalendar. Desktop/tablet defaults to Week, mobile defaults to Day, and the visible timetable is 08:00-22:00 in 30-minute slots.
+- Route pages are lazy-loaded. Keep FullCalendar and date-heavy attendance code outside the initial application bundle.
+- User list search, filters and pagination live in the URL and are executed by the backend. Schedule queries always include the visible calendar range.
 - Admin can select a time interval to create and click an event to edit or delete it. Course, class and teacher filters run client-side against the fetched schedule list.
 - Schedule event colors are deterministic by course. Event blocks show course, class and teacher without letting text overflow.
 
 ## Tests
 
 - Test forms, role guards, sidebar role visibility, delete confirmation and schedule time selection with Vitest and React Testing Library.
+- Password recovery uses one-time email tokens. Profile and password changes update the auth query cache; password changes invalidate existing sessions.
+- Teachers take attendance from their schedule event, students see their own history, and admins use the attendance report page.

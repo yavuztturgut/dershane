@@ -96,7 +96,11 @@ DATABASE_URL=postgres://postgres:123456@localhost:5432/postgres
 JWT_SECRET=your-secret-key
 ```
 
-PostgreSQL tarafinda `create.sql` dosyasindaki tablolari calistir.
+Yeni kurulumda PostgreSQL tarafinda `create.sql` dosyasindaki tablolari calistir. Mevcut kurulumlarda migrasyonlari uygula:
+
+```bash
+npm run migrate
+```
 
 Gelisitirme sunucusunu baslat:
 
@@ -151,6 +155,11 @@ http://localhost:3000
 ```text
 POST /api/auth/login
 GET  /api/auth/profile
+PATCH /api/auth/profile
+POST /api/auth/change-password
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+POST /api/auth/logout
 ```
 
 Login body:
@@ -167,7 +176,7 @@ Login body:
 Tum users endpointleri admin yetkisi ister.
 
 ```text
-GET    /api/users
+GET    /api/users?page=1&pageSize=25&search=&role_id=&class_id=&is_active=&sort=&order=
 GET    /api/users/:id
 POST   /api/users
 PUT    /api/users/:id
@@ -188,7 +197,7 @@ User create body:
 
 ### Roles
 
-Roles CRUD endpointleri admin yetkisi ister.
+Roller sistem davranisini belirleyen sabit `admin`, `teacher` ve `student` kayitlaridir. Liste admin yetkisi ister; degistirme endpointleri `405` doner.
 
 ```text
 GET    /api/roles
@@ -262,6 +271,25 @@ GET    /api/schedules/:id
 POST   /api/schedules
 PUT    /api/schedules/:id
 DELETE /api/schedules/:id
+GET    /api/schedules/:id/attendance
+PUT    /api/schedules/:id/attendance
+```
+
+Program listesi `start`, `end`, `course_id`, `class_id` ve `teacher_id` parametrelerini destekler. Ayni ogretmen veya sinif icin cakisan dersler reddedilir.
+
+### Attendance
+
+```text
+GET /api/attendance/me
+GET /api/attendance/report
+```
+
+Ogretmen kendisine atanmis ders icin yoklama alir; ders bitiminden 24 saat sonra kayit kilitlenir. Admin kilit sonrasinda da duzeltme yapabilir. Durumlar `present`, `absent`, `late` ve `excused` degerleridir.
+
+### Dashboard
+
+```text
+GET /api/dashboard/summary
 ```
 
 Schedule create body:

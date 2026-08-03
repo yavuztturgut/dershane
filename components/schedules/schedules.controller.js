@@ -1,7 +1,7 @@
 const schedulesService = require('./schedules.service');
 
 async function getSchedules(req, res) {
-    const schedules = await schedulesService.getSchedules(req.user);
+    const schedules = await schedulesService.getSchedules(req.user, req.query);
     res.json(schedules);
 }
 

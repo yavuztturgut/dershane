@@ -91,7 +91,11 @@ function errorMiddleware(error, req, res, next) {
     }
 
     if (error.statusCode) {
-        return res.status(error.statusCode).json({ error: error.message, errorCode: getErrorCode(error) || 'REQUEST_FAILED' });
+        return res.status(error.statusCode).json({
+            error: error.message,
+            errorCode: getErrorCode(error) || 'REQUEST_FAILED',
+            ...(error.details ? { details: error.details } : {})
+        });
     }
 
     return res.status(500).json({ error: 'Internal server error', errorCode: 'INTERNAL_ERROR' });

@@ -1,11 +1,12 @@
 export default {
   translation: {
     appName: 'Academy Portal', login: 'Sign in', loginSubtitle: 'Sign in to the management panel',
-    forgotPassword: 'Forgot password?', forgotPasswordUnavailable: 'Password reset will be available soon.',
+    forgotPassword: 'Forgot password?', forgotPasswordHelp: 'Enter your email address and we will send a secure reset link.', sendResetLink: 'Send reset link', resetEmailSent: 'If the account exists, a reset email has been sent.', backToLogin: 'Back to sign in',
     logout: 'Log out', email: 'Email', password: 'Password',
     dashboard: 'Dashboard', users: 'Users', roles: 'Roles', classes: 'Classes', courses: 'Courses',
     schedules: 'Schedules', mySchedule: 'My Schedule', profile: 'Profile', create: 'Create', edit: 'Edit',
-    delete: 'Delete', cancel: 'Cancel', save: 'Save', name: 'Name', role: 'Role', class: 'Class',
+    delete: 'Delete', cancel: 'Cancel', close: 'Close', save: 'Save', name: 'Name', role: 'Role', class: 'Class',
+    unsavedChanges: 'Unsaved changes', unsavedChangesDescription: 'Your changes will be lost. Do you want to discard them?', discard: 'Discard', continueEditing: 'Continue editing',
     active: 'Active', teacher: 'Teacher', course: 'Course', start: 'Start', end: 'End', actions: 'Actions',
     noData: 'No records found.', confirmDelete: 'Delete {{name}}?', deleteDescription: 'This action cannot be undone.',
     created: 'Created successfully.', updated: 'Updated successfully.', deleted: 'Deleted successfully.',
@@ -16,6 +17,10 @@ export default {
     unexpectedError: 'Something went wrong', unexpectedErrorMessage: 'The application could not render this screen.', reload: 'Reload application',
     today: 'Today', previous: 'Previous', next: 'Next', day: 'Day', week: 'Week', month: 'Month',
     filterCourse: 'Filter by course', filterClass: 'Filter by class', filterTeacher: 'Filter by teacher',
+    retry: 'Retry', search: 'Search name or email', yes: 'Yes', no: 'No', sort: 'Sort', ascending: 'Ascending', descending: 'Descending', createdOrder: 'Creation order', systemRole: 'System role', toggleSidebar: 'Toggle sidebar',
+    resetPassword: 'Reset password', newPassword: 'New password', confirmPassword: 'Confirm password', currentPassword: 'Current password', changePassword: 'Change password', passwordChanged: 'Password changed. Sign in again.', passwordResetSuccess: 'Your password has been reset.',
+    attendance: 'Attendance', student: 'Student', status: 'Status', total: 'Total', saveAttendance: 'Save attendance', attendanceSaved: 'Attendance saved.', noStudents: 'No active students were found in this class.', teacherAttendanceHint: 'Open one of your lessons in the schedule to take attendance.', notRecorded: 'Not recorded', markAllPresent: 'Mark all present', markPresentFor: 'Mark {{name}} present',
+    attendanceStatus: { present: 'Present', absent: 'Absent', late: 'Late', excused: 'Excused' },
     errors: {
       GENERIC: 'Something went wrong. Please try again.', REQUIRED: 'This field is required.', INVALID_EMAIL: 'Enter a valid email address.',
       TOKEN_REQUIRED: 'Authentication is required.', INVALID_TOKEN: 'Your session is invalid.', UNAUTHORIZED: 'You need to sign in.', FORBIDDEN: 'You do not have permission for this action.',
@@ -24,6 +29,7 @@ export default {
       SCHEDULE_END_BEFORE_START: 'End time must be after start time.', SCHEDULE_REQUIRED_FIELDS: 'All schedule fields are required.', INVALID_TEACHER: 'The selected teacher must be active.', SCHEDULE_NOT_FOUND: 'Schedule not found.',
       USER_NOT_FOUND: 'User not found.', ROLE_NOT_FOUND: 'Role not found.', CLASS_NOT_FOUND: 'Class not found.', COURSE_NOT_FOUND: 'Course not found.', REQUIRED_FIELDS: 'Required fields are missing.',
       ROLE_NAME_REQUIRED: 'Role name is required.', CLASS_NAME_REQUIRED: 'Class name is required.', COURSE_NAME_REQUIRED: 'Course name is required.', AUTH_CREDENTIALS_REQUIRED: 'Email and password are required.', INVALID_CREDENTIALS: 'Invalid email or password.', USER_INACTIVE: 'This user is inactive.', INTERNAL_ERROR: 'A server error occurred.', REQUEST_FAILED: 'The request could not be completed.', LOGOUT_FAILED: 'Unable to log out.',
+      PASSWORD_TOO_SHORT: 'Password must contain at least 8 characters.', PASSWORD_MISMATCH: 'Passwords do not match.', INVALID_CURRENT_PASSWORD: 'Current password is invalid.', RESET_TOKEN_INVALID: 'This password reset link is invalid or expired.', INVALID_PROFILE: 'Enter a valid name and email.', STUDENT_CLASS_REQUIRED: 'A class is required for students.', SYSTEM_ROLES_FIXED: 'System roles cannot be changed.', SCHEDULE_CONFLICT: 'This teacher or class already has a lesson in that time range.', TOO_MANY_REQUESTS: 'Too many requests. Please wait and try again.', ATTENDANCE_NOT_OPEN: 'Attendance opens when the lesson starts.', ATTENDANCE_LOCKED: 'Attendance is locked. Ask an administrator to make changes.', INVALID_ATTENDANCE: 'Attendance data is invalid.', INVALID_ATTENDANCE_STUDENT: 'A selected student does not belong to this class.',
     },
   },
 };

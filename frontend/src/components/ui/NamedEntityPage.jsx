@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Group, Table, TextInput } from '@mantine/core';
+import { ActionIcon, Alert, Button, Group, Table, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
@@ -14,18 +14,19 @@ import { EmptyState } from './EmptyState';
 import { AppModal } from './AppModal';
 import { openAppConfirmModal } from './app-confirm-modal';
 
-export function NamedEntityPage({ api, queryKey, titleKey }) {
+export function NamedEntityPage({ api, queryKey, titleKey, readOnly = false }) {
   const { t } = useTranslation();
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const saveRequestRef = useRef(false);
   const form = useForm({ initialValues: { name: '' }, validate: { name: (value) => value.trim() ? null : t('errors.REQUIRED') } });
+  const setFormValues = form.setValues;
   const listQuery = useQuery({ queryKey: [queryKey], queryFn: api.getAll });
   const detailQuery = useQuery({ queryKey: [queryKey, editingId], queryFn: () => api.getById(editingId), enabled: Boolean(editingId) });
 
   useEffect(() => {
-    if (detailQuery.data) form.setValues({ name: detailQuery.data.name });
-  }, [detailQuery.data]);
+    if (detailQuery.data) setFormValues({ name: detailQuery.data.name });
+  }, [detailQuery.data, setFormValues]);
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey] });
   const saveMutation = useMutation({
@@ -72,10 +73,11 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
   }
 
   if (listQuery.isLoading) return <PageLoader />;
+  if (listQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => listQuery.refetch()}>{t('retry')}</Button></Alert>;
 
   return (
     <>
-      <PageHeader title={t(titleKey)} onCreate={openCreate} createLabel={t('create')} />
+      <PageHeader title={t(titleKey)} onCreate={readOnly ? undefined : openCreate} createLabel={t('create')} />
       {!listQuery.data?.length ? <EmptyState message={t('noData')} /> : (
         <Table.ScrollContainer minWidth={480}>
           <Table highlightOnHover withTableBorder>
@@ -83,20 +85,20 @@ export function NamedEntityPage({ api, queryKey, titleKey }) {
             <Table.Tbody>{listQuery.data.map((item) => (
               <Table.Tr key={item.id}>
                 <Table.Td>{item.name}</Table.Td>
-                <Table.Td><Group gap="xs"><ActionIcon variant="subtle" onClick={() => openEdit(item.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group></Table.Td>
+                <Table.Td>{readOnly ? t('systemRole') : <Group gap="xs"><ActionIcon variant="subtle" onClick={() => openEdit(item.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>}</Table.Td>
               </Table.Tr>
             ))}</Table.Tbody>
           </Table>
         </Table.ScrollContainer>
       )}
-      <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>
+      {!readOnly && <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>
         {editingId && detailQuery.isLoading ? <PageLoader /> : (
           <form onSubmit={form.onSubmit(saveEntity)}>
             <TextInput label={t('name')} required {...form.getInputProps('name')} />
             <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group>
           </form>
         )}
-      </AppModal>
+      </AppModal>}
     </>
   );
 }

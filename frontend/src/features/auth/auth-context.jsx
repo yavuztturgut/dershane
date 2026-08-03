@@ -1,12 +1,12 @@
-import { createContext, useContext, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { authApi } from './auth.api';
 import { queryClient } from '../../lib/query-client';
 import { setUnauthorizedHandler } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import i18n from '../../app/i18n';
+import { AuthContext } from './auth-context-value';
 
-const AuthContext = createContext(null);
 const profileKey = ['auth', 'profile'];
 
 export function AuthProvider({ children }) {
@@ -38,6 +38,13 @@ export function AuthProvider({ children }) {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: authApi.updateProfile,
+    onSuccess: (user) => queryClient.setQueryData(profileKey, user),
+  });
+
+  const changePasswordMutation = useMutation({ mutationFn: authApi.changePassword });
+
   const value = useMemo(() => ({
     user: profileQuery.data || null,
     isLoading: profileQuery.isLoading,
@@ -50,17 +57,14 @@ export function AuthProvider({ children }) {
         notifyError(i18n.t('errors.LOGOUT_FAILED'));
       }
     },
-  }), [profileQuery.data, profileQuery.isLoading, loginMutation, logoutMutation]);
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending,
+    changePassword: async (data) => {
+      await changePasswordMutation.mutateAsync(data);
+      queryClient.clear();
+    },
+    isChangingPassword: changePasswordMutation.isPending,
+  }), [profileQuery.data, profileQuery.isLoading, loginMutation, logoutMutation, updateProfileMutation, changePasswordMutation]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
-  }
-
-  return context;
 }

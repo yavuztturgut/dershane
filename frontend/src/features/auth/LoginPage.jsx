@@ -1,10 +1,10 @@
 import { Anchor, Button, Group, PasswordInput, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useTranslation } from 'react-i18next';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from './auth-context';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from './use-auth';
 import { getErrorMessage } from '../../lib/api-client';
-import { notifyError, notifyInfo } from '../../lib/notifications';
+import { notifyError } from '../../lib/notifications';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
 import loginIllustration from '../../assets/login.png';
@@ -30,11 +30,6 @@ export function LoginPage() {
     }
   }
 
-  function handleForgotPassword(event) {
-    event.preventDefault();
-    notifyInfo(t('forgotPasswordUnavailable'));
-  }
-
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-dark-8 sm:px-6 lg:grid lg:grid-cols-[30fr_70fr] lg:p-0">
       <section className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center lg:min-h-screen lg:px-8">
@@ -57,7 +52,7 @@ export function LoginPage() {
             <PasswordInput label={t('password')} required mt="md" size="md" radius="md" {...form.getInputProps('password')} />
 
             <Group justify="flex-end" mt="sm">
-              <Anchor href="#" size="sm" onClick={handleForgotPassword}>
+              <Anchor component={Link} to="/forgot-password" size="sm">
                 {t('forgotPassword')}
               </Anchor>
             </Group>

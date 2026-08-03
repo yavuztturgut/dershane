@@ -28,6 +28,31 @@ async function getProfile(req, res) {
     res.json(profile);
 }
 
+async function updateProfile(req, res) {
+    res.json(await authService.updateProfile(req.user.id, req.body));
+}
+
+async function changePassword(req, res) {
+    await authService.changePassword(req.user.id, req.body);
+    res.clearCookie('access_token', getCookieOptions());
+    res.status(204).send();
+}
+
+async function forgotPassword(req, res) {
+    try {
+        await authService.forgotPassword(req.body);
+    } catch (error) {
+        console.error('Password reset email failed:', error);
+    }
+    res.status(202).json({ message: 'If the account exists, a reset email has been sent' });
+}
+
+async function resetPassword(req, res) {
+    await authService.resetPassword(req.body);
+    res.clearCookie('access_token', getCookieOptions());
+    res.status(204).send();
+}
+
 function logout(req, res) {
     res.clearCookie('access_token', getCookieOptions());
     res.status(204).send();
@@ -36,5 +61,9 @@ function logout(req, res) {
 module.exports = {
     login,
     getProfile,
-    logout
+    logout,
+    updateProfile,
+    changePassword,
+    forgotPassword,
+    resetPassword
 };

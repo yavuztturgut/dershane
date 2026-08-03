@@ -1,23 +1,42 @@
 const pool = require('../../db/pool');
 
-async function findAllUsers() {
-    const result = await pool.query(
+async function findAllUsers(filters = {}) {
+    const params = [];
+    const conditions = [];
+    if (filters.search) {
+        params.push(`%${filters.search}%`);
+        conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
+    }
+    for (const [column, value] of [['role_id', filters.role_id], ['class_id', filters.class_id], ['is_active', filters.is_active]]) {
+        if (value !== undefined && value !== '') {
+            params.push(value);
+            conditions.push(`u.${column} = $${params.length}`);
+        }
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const sortColumns = { id: 'u.id', name: 'u.name', email: 'u.email', created_at: 'u.created_at' };
+    const sort = sortColumns[filters.sort] || 'u.id';
+    const order = filters.order === 'desc' ? 'DESC' : 'ASC';
+    const countParams = [...params];
+    params.push(filters.pageSize, (filters.page - 1) * filters.pageSize);
+    const [result, countResult] = await Promise.all([pool.query(
         `
           SELECT
-              id,
-              role_id,
-              class_id,
-              name,
-              email,
-              is_active,
-              created_at,
-              updated_at
-          FROM users
-          ORDER BY id ASC
-          `
-    );
+              u.id, u.role_id, u.class_id, u.name, u.email, u.is_active, u.created_at, u.updated_at,
+              COUNT(*) OVER()::INTEGER AS total_count
+          FROM users u
+          ${where}
+          ORDER BY ${sort} ${order}
+          LIMIT $${params.length - 1} OFFSET $${params.length}
+          `,
+        params
+    ), pool.query(`SELECT COUNT(*)::INTEGER AS total FROM users u ${where}`, countParams)]);
+    return { items: result.rows.map(({ total_count, ...user }) => user), total: countResult.rows[0].total };
+}
 
-    return result.rows;
+async function findRoleNameById(id) {
+    const result = await pool.query('SELECT name FROM roles WHERE id = $1', [id]);
+    return result.rows[0]?.name;
 }
 
 async function findUserById(id) {
@@ -140,5 +159,6 @@ module.exports = {
     findUserWithPasswordById,
     insertUser,
     updateUserById,
-    deleteUserById
+    deleteUserById,
+    findRoleNameById
 };

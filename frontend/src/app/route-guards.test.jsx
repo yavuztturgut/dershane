@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const useAuthMock = vi.fn();
 
-vi.mock('../features/auth/auth-context', () => ({
+vi.mock('../features/auth/use-auth', () => ({
   useAuth: () => useAuthMock(),
 }));
 
