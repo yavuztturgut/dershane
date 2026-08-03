@@ -4,6 +4,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const attendanceCss = readFileSync(resolve(process.cwd(), 'src/features/attendance/AttendancePage.module.css'), 'utf8');
 
 vi.mock('../auth/use-auth', () => ({ useAuth: () => ({ user: { id: 1, role_name: 'admin' } }) }));
 vi.mock('../classes/classes.api', () => ({ classesApi: { getAll: vi.fn(async () => [{ id: 1, name: 'Class A' }]) } }));
@@ -51,6 +55,18 @@ function renderPage() {
 describe('AttendancePage daily admin report', () => {
   beforeEach(() => getDailyReport.mockClear());
   afterEach(cleanup);
+
+  it('defines a primary-color top stripe for an active lesson without changing its layout', () => {
+    expect(attendanceCss).toContain('.lesson[data-active]::before');
+    expect(attendanceCss).toContain('height: 3px');
+    expect(attendanceCss).toContain('background: var(--mantine-primary-color-filled)');
+    expect(attendanceCss).toContain('position: absolute');
+  });
+
+  it('defines a green top stripe for an active day', () => {
+    expect(attendanceCss).toContain('.day[data-active]::before');
+    expect(attendanceCss).toContain('background: var(--mantine-color-green-5)');
+  });
 
   it('opens only the newest day and its first lesson, then lazy-loads another lesson', async () => {
     renderPage();

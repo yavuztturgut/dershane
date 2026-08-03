@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Group, NavLink, Select, Text } from '@mantine/core';
+import { ActionIcon, AppShell, Group, NavLink, Select, Stack, Text } from '@mantine/core';
 import {
   IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
   IconLanguage, IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
@@ -79,12 +79,19 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
       <div className="border-t border-gray-200 p-3 dark:border-dark-5">
         {!collapsed && <Text size="sm" fw={600} mb={user.role_name === 'admin' ? 0 : 'sm'} truncate>{user.name}</Text>}
         {!collapsed && user.role_name === 'admin' && <Text size="xs" c="dimmed" mb="sm">{user.role_name}</Text>}
-        <Group gap="xs" wrap="nowrap">
-          {collapsed ? (
+        {collapsed ? (
+          <Stack data-testid="collapsed-sidebar-actions" gap="xs" align="center">
             <ActionIcon variant="light" onClick={toggleLanguage} aria-label={t('language')}>
               <IconLanguage size={18} />
             </ActionIcon>
-          ) : (
+            <ThemeToggle />
+            <ActionIcon variant="subtle" onClick={handleLogout} aria-label={t('logout')}>
+              <IconLogout size={19} />
+            </ActionIcon>
+          </Stack>
+        ) : (
+          <>
+            <Group gap="xs" wrap="nowrap">
             <Select
               aria-label={t('language')}
               value={i18n.language}
@@ -92,15 +99,16 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
               data={[{ value: 'en', label: 'English' }, { value: 'tr', label: 'Turkce' }]}
               className="min-w-0 flex-1"
             />
-          )}
-          <ThemeToggle />
-        </Group>
-        <NavLink
-          label={collapsed ? undefined : t('logout')}
-          leftSection={<IconLogout size={19} />}
-          onClick={handleLogout}
-          className="mt-2 rounded-md"
-        />
+              <ThemeToggle />
+            </Group>
+            <NavLink
+              label={t('logout')}
+              leftSection={<IconLogout size={19} />}
+              onClick={handleLogout}
+              className="mt-2 rounded-md"
+            />
+          </>
+        )}
       </div>
     </AppShell.Navbar>
   );

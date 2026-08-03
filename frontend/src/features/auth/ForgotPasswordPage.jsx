@@ -8,12 +8,12 @@ import { notifyError } from '../../lib/notifications';
 import { getErrorMessage } from '../../lib/api-client';
 
 export function ForgotPasswordPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const form = useForm({ initialValues: { email: '' }, validate: { email: (value) => /^\S+@\S+\.\S+$/.test(value) ? null : t('errors.INVALID_EMAIL') } });
 
   async function submit(values) {
     try {
-      await authApi.forgotPassword(values);
+      await authApi.forgotPassword({ ...values, language: i18n.resolvedLanguage === 'tr' ? 'tr' : 'en' });
       notifications.show({ color: 'green', message: t('resetEmailSent') });
     } catch (error) {
       notifyError(getErrorMessage(error));

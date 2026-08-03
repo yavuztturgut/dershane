@@ -97,6 +97,13 @@ async function changePassword(userId, data) {
     await authRepository.updatePassword(userId, await bcrypt.hash(data.new_password, 10));
 }
 
+function getResetBaseUrl() {
+    if (process.env.RESET_URL_BASE) return process.env.RESET_URL_BASE;
+    if (process.env.CLIENT_URL) return `${process.env.CLIENT_URL.replace(/\/$/, '')}/reset-password`;
+    if (process.env.NODE_ENV === 'production') throw new Error('CLIENT_URL or RESET_URL_BASE is required in production');
+    return 'http://localhost:5173/reset-password';
+}
+
 async function forgotPassword(data) {
     const email = data.email?.trim().toLowerCase();
     if (!email) return;
@@ -106,8 +113,9 @@ async function forgotPassword(data) {
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
     await authRepository.createPasswordResetToken(user.id, tokenHash, new Date(Date.now() + 30 * 60 * 1000));
-    const baseUrl = process.env.RESET_URL_BASE || `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password`;
-    await emailService.sendPasswordReset({ email: user.email, name: user.name, resetUrl: `${baseUrl}?token=${token}` });
+    const baseUrl = getResetBaseUrl();
+    const language = data.language === 'tr' ? 'tr' : 'en';
+    await emailService.sendPasswordReset({ email: user.email, name: user.name, resetUrl: `${baseUrl}?token=${token}`, language });
 }
 
 async function resetPassword(data) {
@@ -125,5 +133,6 @@ module.exports = {
     updateProfile,
     changePassword,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    getResetBaseUrl
 };

@@ -54,9 +54,11 @@ function toLocalDateTime(value) {
 
 function ScheduleEvent({ event }) {
   const { course_name, class_name, teacher_name } = event.extendedProps;
+  const durationMinutes = (event.end?.getTime() - event.start?.getTime()) / 60000;
+  const isCompact = durationMinutes <= 30;
 
   return (
-    <div className={styles.event}>
+    <div className={`${styles.event} ${isCompact ? styles.eventCompact : ''}`} title={`${course_name} · ${class_name} · ${teacher_name}`}>
       <div className={styles.eventCourse}>{course_name}</div>
       <div className={styles.eventMeta}>{class_name} · {teacher_name}</div>
     </div>
@@ -356,7 +358,8 @@ export function SchedulesPage() {
             slotLabelFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
             eventTimeFormat={{ hour: '2-digit', minute: '2-digit', hour12: false }}
             dayHeaderFormat={{ weekday: 'short', day: 'numeric', month: 'numeric' }}
-            eventMinHeight={48}
+            eventMinHeight={24}
+            slotEventOverlap={false}
             events={events}
             selectable={isAdmin}
             select={handleSelect}

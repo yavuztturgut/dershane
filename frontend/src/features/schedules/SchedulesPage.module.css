@@ -94,6 +94,16 @@
   cursor: pointer;
 }
 
+.eventCompact {
+  display: flex;
+  align-items: center;
+  padding-block: .15rem;
+}
+
+.eventCompact .eventMeta {
+  display: none;
+}
+
 .eventCourse,
 .eventMeta {
   overflow: hidden;

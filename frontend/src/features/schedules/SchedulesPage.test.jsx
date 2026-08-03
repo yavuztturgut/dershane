@@ -9,7 +9,7 @@ vi.mock('@fullcalendar/react', async () => {
   return {
     default: React.forwardRef(function CalendarMock(props, ref) {
       React.useImperativeHandle(ref, () => ({ getApi: () => ({ changeView: vi.fn(), prev: vi.fn(), next: vi.fn(), today: vi.fn() }) }));
-      return <button type="button" onClick={() => props.eventClick({ event: { id: '1' } })}>Open lesson</button>;
+      return <button type="button" data-event-min-height={String(props.eventMinHeight)} data-slot-event-overlap={String(props.slotEventOverlap)} onClick={() => props.eventClick({ event: { id: '1' } })}>Open lesson</button>;
     }),
   };
 });
@@ -75,6 +75,13 @@ describe('SchedulesPage lesson modal', () => {
     getAttendance.mockClear();
     saveAttendance.mockClear();
     updateSchedule.mockClear();
+  });
+
+  it('keeps genuine overlaps side by side without forcing short adjacent lessons to collide', async () => {
+    renderPage();
+    const calendar = await screen.findByRole('button', { name: 'Open lesson' });
+    expect(calendar).toHaveAttribute('data-slot-event-overlap', 'false');
+    expect(calendar).toHaveAttribute('data-event-min-height', '24');
   });
 
   it('opens admin details and attendance in one dual panel, then enters edit mode', async () => {

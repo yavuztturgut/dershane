@@ -95,7 +95,7 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
       data={options}
       value={status}
       onChange={(nextStatus) => nextStatus && setValues((current) => ({ ...current, [record.student_id]: nextStatus }))}
-      w="50%"
+      w="25%"
       miw={160}
       styles={{ input: {
         backgroundColor: selectedStyle.background,

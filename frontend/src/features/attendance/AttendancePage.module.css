@@ -5,10 +5,37 @@
 
 .day,
 .lesson {
+  position: relative;
   overflow: hidden;
   border: 1px solid var(--mantine-color-default-border);
   border-radius: var(--mantine-radius-md);
   background: var(--mantine-color-body);
+}
+
+.lesson[data-active]::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
+  background: var(--mantine-primary-color-filled);
+  content: '';
+  pointer-events: none;
+}
+
+.day[data-active]::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
+  background: var(--mantine-color-green-5);
+  content: '';
+  pointer-events: none;
 }
 
 .lesson + .lesson {
