@@ -1,0 +1,29 @@
+.days {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.day,
+.lesson {
+  overflow: hidden;
+  border: 1px solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+}
+
+.lesson + .lesson {
+  margin-top: 0.5rem;
+}
+
+.lessonHeader {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(18rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 48rem) {
+  .lessonHeader {
+    grid-template-columns: 1fr;
+  }
+}

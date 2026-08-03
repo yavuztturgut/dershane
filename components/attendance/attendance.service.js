@@ -9,11 +9,15 @@ function assertViewer(schedule, user) {
     throw createHttpError('Attendance access forbidden', 403, 'FORBIDDEN');
 }
 
-async function getScheduleAttendance(scheduleId, user) {
+async function getScheduleAttendance(scheduleId, user, filters = {}) {
     const schedule = await attendanceRepository.findSchedule(scheduleId);
     if (!schedule) throw createHttpError('Schedule not found', 404, 'SCHEDULE_NOT_FOUND');
     assertViewer(schedule, user);
-    return { schedule, records: await attendanceRepository.findScheduleAttendance(scheduleId) };
+    const studentId = user.role_name === 'admin' && filters.student_id ? Number(filters.student_id) : undefined;
+    if (studentId !== undefined && !Number.isInteger(studentId)) {
+        throw createHttpError('student_id is invalid', 400, 'INVALID_STUDENT');
+    }
+    return { schedule, records: await attendanceRepository.findScheduleAttendance(scheduleId, studentId) };
 }
 
 async function saveScheduleAttendance(scheduleId, records, user) {
@@ -59,4 +63,31 @@ async function getReport(user, filters) {
     return { items, page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }
 
-module.exports = { getScheduleAttendance, saveScheduleAttendance, getMyAttendance, getReport };
+async function getDailyReport(user, filters) {
+    if (user.role_name !== 'admin') throw createHttpError('Attendance access forbidden', 403, 'FORBIDDEN');
+    const page = Math.max(1, Number(filters.page) || 1);
+    const pageSize = Math.min(31, Math.max(1, Number(filters.pageSize) || 7));
+    const { schedules, totalDays } = await attendanceRepository.findDailyReport({ ...filters, page, pageSize });
+    const daysByDate = new Map();
+    for (const schedule of schedules) {
+        const date = typeof schedule.lesson_date === 'string'
+            ? schedule.lesson_date.slice(0, 10)
+            : new Date(schedule.lesson_date).toLocaleDateString('en-CA');
+        if (!daysByDate.has(date)) {
+            daysByDate.set(date, { date, lesson_count: 0, attendance_taken_count: 0, schedules: [] });
+        }
+        const day = daysByDate.get(date);
+        day.lesson_count += 1;
+        day.attendance_taken_count += schedule.attendance_taken ? 1 : 0;
+        day.schedules.push(schedule);
+    }
+    return {
+        days: [...daysByDate.values()],
+        page,
+        pageSize,
+        totalDays,
+        totalPages: Math.ceil(totalDays / pageSize),
+    };
+}
+
+module.exports = { getScheduleAttendance, saveScheduleAttendance, getMyAttendance, getReport, getDailyReport };

@@ -1,4 +1,4 @@
-import { Alert, Checkbox, Group, Select, Table, Text } from '@mantine/core';
+import { Alert, Button, Checkbox, Group, Select, Table, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -25,36 +25,43 @@ const statusStyles = {
   excused: { background: '#fbcfe8', border: '#f472b6', color: '#9d174d' },
 };
 
-export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleId, onDirtyChange, onSavingChange, onCanSaveChange }, ref) {
+export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleId, studentId, onDirtyChange, onSavingChange, onCanSaveChange, onSaved, inlineSave = false }, ref) {
   const { t } = useTranslation();
-  const query = useQuery({ queryKey: ['attendance', scheduleId], queryFn: () => attendanceApi.getForSchedule(scheduleId), enabled: Boolean(scheduleId) });
+  const query = useQuery({
+    queryKey: ['attendance', scheduleId, studentId || 'all'],
+    queryFn: () => attendanceApi.getForSchedule(scheduleId, { student_id: studentId || undefined }),
+    enabled: Boolean(scheduleId),
+  });
   const [values, setValues] = useState({});
   const baselineRef = useRef({});
+  const callbacksRef = useRef({ onDirtyChange, onSavingChange, onCanSaveChange });
+  callbacksRef.current = { onDirtyChange, onSavingChange, onCanSaveChange };
   useEffect(() => {
     if (query.data) {
       const nextValues = valuesFromRecords(query.data.records);
       baselineRef.current = nextValues;
       setValues(nextValues);
-      onDirtyChange?.(false);
+      callbacksRef.current.onDirtyChange?.(false);
     }
-  }, [query.data, onDirtyChange]);
+  }, [query.data]);
   const isDirty = useMemo(() => !valuesMatch(values, baselineRef.current), [values]);
-  useEffect(() => { onDirtyChange?.(isDirty); }, [isDirty, onDirtyChange]);
+  useEffect(() => { callbacksRef.current.onDirtyChange?.(isDirty); }, [isDirty]);
   const mutation = useMutation({
     mutationFn: () => attendanceApi.saveForSchedule(scheduleId, Object.entries(values).map(([student_id, status]) => ({ student_id: Number(student_id), status }))),
-    onSuccess: () => {
+    onSuccess: (result) => {
       baselineRef.current = { ...values };
       onDirtyChange?.(false);
       notifications.show({ color: 'green', message: t('attendanceSaved') });
       queryClient.invalidateQueries({ queryKey: ['attendance', scheduleId] });
+      onSaved?.(result);
     },
     onError: (error) => notifyError(getErrorMessage(error)),
   });
   useImperativeHandle(ref, () => ({ save: () => mutation.mutate() }), [mutation]);
-  useEffect(() => { onSavingChange?.(mutation.isPending); }, [mutation.isPending, onSavingChange]);
+  useEffect(() => { callbacksRef.current.onSavingChange?.(mutation.isPending); }, [mutation.isPending]);
   useEffect(() => {
-    onCanSaveChange?.(Boolean(query.data?.records.length) && !query.isLoading && !query.isError);
-  }, [onCanSaveChange, query.data, query.isError, query.isLoading]);
+    callbacksRef.current.onCanSaveChange?.(Boolean(query.data?.records.length) && !query.isLoading && !query.isError);
+  }, [query.data, query.isError, query.isLoading]);
   if (query.isLoading) return <PageLoader />;
   if (query.isError) return <Alert color="red">{getErrorMessage(query.error)}</Alert>;
   if (!query.data.records.length) return <Text c="dimmed">{t('noStudents')}</Text>;
@@ -71,7 +78,7 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
     setValues((current) => ({ ...current, [studentId]: checked ? 'present' : 'absent' }));
   }
 
-  return <Table withTableBorder><Table.Thead><Table.Tr><Table.Th>{t('student')}</Table.Th><Table.Th><Group justify="space-between" wrap="nowrap"><Text fw={700}>{t('status')}</Text><Checkbox
+  return <><Table.ScrollContainer minWidth={420}><Table withTableBorder><Table.Thead><Table.Tr><Table.Th>{t('student')}</Table.Th><Table.Th><Group justify="flex-end" gap="md" wrap="nowrap"><Checkbox
     label={t('markAllPresent')}
     checked={allPresent}
     indeterminate={somePresent}
@@ -79,7 +86,7 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
   /></Group></Table.Th></Table.Tr></Table.Thead><Table.Tbody>{query.data.records.map((record) => {
     const status = values[record.student_id] || 'absent';
     const selectedStyle = statusStyles[status];
-    return <Table.Tr key={record.student_id}><Table.Td>{record.student_name}<Text size="xs" c="dimmed">{record.email}</Text></Table.Td><Table.Td><Group gap="md" wrap="nowrap"><Checkbox
+    return <Table.Tr key={record.student_id}><Table.Td>{record.student_name}<Text size="xs" c="dimmed">{record.email}</Text></Table.Td><Table.Td><Group justify="flex-end" gap="md" wrap="nowrap"><Checkbox
       aria-label={t('markPresentFor', { name: record.student_name })}
       checked={status === 'present'}
       onChange={(event) => setStudentPresent(record.student_id, event.currentTarget.checked)}
@@ -109,5 +116,9 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
         }}>{option.label}</div>;
       }}
     /></Group></Table.Td></Table.Tr>;
-  })}</Table.Tbody></Table>;
+  })}</Table.Tbody></Table></Table.ScrollContainer>{inlineSave && <Group justify="flex-end" mt="md"><Button
+    onClick={() => mutation.mutate()}
+    loading={mutation.isPending}
+    disabled={!query.data.records.length}
+  >{t('saveAttendance')}</Button></Group>}</>;
 });

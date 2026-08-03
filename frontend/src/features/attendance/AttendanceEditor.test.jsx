@@ -109,4 +109,15 @@ describe('AttendanceEditor quick marking', () => {
     expect(studentCheckbox).not.toBeChecked();
     expect(firstStatus).toHaveValue('Late');
   });
+
+  it('loads only the selected student and reports a successful inline save', async () => {
+    const onSaved = vi.fn();
+    renderEditor({ studentId: '2', inlineSave: true, onSaved });
+
+    await screen.findByRole('button', { name: 'Save attendance' });
+    expect(getForSchedule).toHaveBeenCalledWith(9, { student_id: '2' });
+    fireEvent.click(screen.getByRole('button', { name: 'Save attendance' }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+  });
 });

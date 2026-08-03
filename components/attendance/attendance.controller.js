@@ -1,7 +1,7 @@
 const attendanceService = require('./attendance.service');
 
 async function getScheduleAttendance(req, res) {
-    res.json(await attendanceService.getScheduleAttendance(Number(req.params.id), req.user));
+    res.json(await attendanceService.getScheduleAttendance(Number(req.params.id), req.user, req.query));
 }
 
 async function saveScheduleAttendance(req, res) {
@@ -16,4 +16,8 @@ async function getReport(req, res) {
     res.json(await attendanceService.getReport(req.user, req.query));
 }
 
-module.exports = { getScheduleAttendance, saveScheduleAttendance, getMyAttendance, getReport };
+async function getDailyReport(req, res) {
+    res.json(await attendanceService.getDailyReport(req.user, req.query));
+}
+
+module.exports = { getScheduleAttendance, saveScheduleAttendance, getMyAttendance, getReport, getDailyReport };
