@@ -7,6 +7,7 @@ import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
+import { LanguageToggle } from '../../components/ui/LanguageToggle';
 import loginIllustration from '../../assets/login.png';
 
 export function LoginPage() {
@@ -33,9 +34,10 @@ export function LoginPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-dark-8 sm:px-6 lg:grid lg:grid-cols-[30fr_70fr] lg:p-0">
       <section className="relative flex min-h-[calc(100vh-4rem)] items-center justify-center lg:min-h-screen lg:px-8">
-        <div className="absolute right-0 top-0 z-10 lg:right-8 lg:top-8">
+        <Group className="absolute right-0 top-0 z-10 lg:right-8 lg:top-8" gap="xs">
+          <LanguageToggle />
           <ThemeToggle />
-        </div>
+        </Group>
 
         <div className="w-full max-w-md lg:w-4/5 lg:max-w-sm xl:max-w-md">
           <div className="mb-8 flex justify-center lg:hidden">

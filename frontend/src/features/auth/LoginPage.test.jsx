@@ -10,5 +10,7 @@ describe('LoginPage', () => {
   it('links to the real password recovery flow', () => {
     render(<MantineProvider><MemoryRouter><LoginPage /></MemoryRouter></MantineProvider>);
     expect(screen.getByRole('link', { name: 'Forgot password?' })).toHaveAttribute('href', '/forgot-password');
+    expect(screen.getByRole('button', { name: 'Language' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dark' })).toBeInTheDocument();
   });
 });

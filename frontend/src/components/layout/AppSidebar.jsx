@@ -1,12 +1,13 @@
 import { ActionIcon, AppShell, Group, NavLink, Select, Stack, Text } from '@mantine/core';
 import {
   IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
-  IconLanguage, IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
+  IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../features/auth/use-auth';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { LanguageToggle } from '../ui/LanguageToggle';
 
 const adminItems = [
   { to: '/', key: 'dashboard', icon: IconDashboard },
@@ -37,10 +38,6 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
     if (!language) return;
     localStorage.setItem('language', language);
     i18n.changeLanguage(language);
-  }
-
-  function toggleLanguage() {
-    changeLanguage(i18n.language === 'tr' ? 'en' : 'tr');
   }
 
   return (
@@ -81,9 +78,7 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
         {!collapsed && user.role_name === 'admin' && <Text size="xs" c="dimmed" mb="sm">{user.role_name}</Text>}
         {collapsed ? (
           <Stack data-testid="collapsed-sidebar-actions" gap="xs" align="center">
-            <ActionIcon variant="light" onClick={toggleLanguage} aria-label={t('language')}>
-              <IconLanguage size={18} />
-            </ActionIcon>
+            <LanguageToggle />
             <ThemeToggle />
             <ActionIcon variant="subtle" onClick={handleLogout} aria-label={t('logout')}>
               <IconLogout size={19} />
