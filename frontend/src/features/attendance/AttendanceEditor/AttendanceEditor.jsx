@@ -1,11 +1,10 @@
 import { Alert, Button, Checkbox, Group, Select, Table, Text } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { getErrorMessage } from '../../../shared/api/api-client';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { attendanceApi } from '../attendance.api';
 import { queryKeys } from '../../../shared/query/query-keys';
@@ -50,7 +49,7 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
     onSuccess: (result) => {
       baselineRef.current = { ...values };
       onDirtyChange?.(false);
-      notifications.show({ color: 'green', message: t('attendanceSaved') });
+      notifySuccess(t('attendanceSaved'));
       queryClient.setQueryData(queryKeys.attendance.schedule(scheduleId, studentId), result);
       queryClient.invalidateQueries({ queryKey: queryKeys.attendance.reports() });
       onSaved?.(result);

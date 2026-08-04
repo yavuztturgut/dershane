@@ -1,10 +1,9 @@
 import { Anchor, Button, PasswordInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../auth.api';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { getErrorMessage } from '../../../shared/api/api-client';
 import { AuthLayout } from '../AuthLayout/AuthLayout';
 
@@ -24,7 +23,7 @@ export function ResetPasswordPage() {
   async function submit(values) {
     try {
       await authApi.resetPassword({ token, new_password: values.password });
-      notifications.show({ color: 'green', message: t('passwordResetSuccess') });
+      notifySuccess(t('passwordResetSuccess'));
       navigate('/login');
     } catch (error) {
       notifyError(getErrorMessage(error));

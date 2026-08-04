@@ -15,7 +15,7 @@ vi.mock('../attendance.api', () => ({
   },
 }));
 
-vi.mock('@mantine/notifications', () => ({ notifications: { show: vi.fn() } }));
+vi.mock('../../../shared/notifications/notifications', () => ({ notifyError: vi.fn(), notifySuccess: vi.fn() }));
 
 import { AttendanceEditor } from './AttendanceEditor';
 import styles from './AttendanceEditor.module.css';

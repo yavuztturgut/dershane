@@ -1,37 +1,81 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { notifications, notificationsStore } from '@mantine/notifications';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  DEFAULT_NOTIFICATION_DURATION_MS,
+  ERROR_NOTIFICATION_DURATION_MS,
+  QUEUED_NOTIFICATION_LIMIT,
+  VISIBLE_NOTIFICATION_LIMIT,
+  notifyError,
+  notifyInfo,
+  notifySuccess,
+} from './notifications';
 
-const { show, cleanQueue } = vi.hoisted(() => ({
-  show: vi.fn(),
-  cleanQueue: vi.fn(),
-}));
+function state() {
+  return notificationsStore.getState();
+}
 
-vi.mock('@mantine/notifications', () => ({
-  notifications: { show, cleanQueue },
-}));
+function allNotifications() {
+  return [...state().notifications, ...state().queue];
+}
 
-import { ERROR_NOTIFICATION_COOLDOWN_MS, notifyError } from './notifications';
-
-describe('notifyError', () => {
+describe('notification manager', () => {
   beforeEach(() => {
-    show.mockClear();
-    cleanQueue.mockClear();
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-07-22T10:00:00'));
+    notifications.clean();
+    notificationsStore.setState({
+      notifications: [],
+      queue: [],
+      defaultPosition: 'top-right',
+      limit: VISIBLE_NOTIFICATION_LIMIT,
+    });
   });
 
-  it('shows the same error only once during the cooldown', () => {
-    notifyError('Network error');
-    notifyError('Network error');
+  it('keeps at most three visible notifications and one queued notification', () => {
+    for (let index = 1; index <= 6; index += 1) notifyInfo(`Message ${index}`);
 
-    expect(show).toHaveBeenCalledTimes(1);
-    expect(cleanQueue).toHaveBeenCalledTimes(1);
+    expect(state().notifications).toHaveLength(VISIBLE_NOTIFICATION_LIMIT);
+    expect(state().queue).toHaveLength(QUEUED_NOTIFICATION_LIMIT);
+    expect(state().queue[0].message).toBe('Message 6');
   });
 
-  it('shows the same error again after the cooldown', () => {
-    notifyError('Timeout error');
-    vi.advanceTimersByTime(ERROR_NOTIFICATION_COOLDOWN_MS);
-    notifyError('Timeout error');
+  it('deduplicates the same kind and normalized message while it is active or queued', () => {
+    notifySuccess(' Saved ');
+    notifySuccess('Saved');
 
-    expect(show).toHaveBeenCalledTimes(2);
+    expect(allNotifications()).toHaveLength(1);
+    expect(allNotifications()[0]).toMatchObject({
+      id: 'success:Saved',
+      message: 'Saved',
+      color: 'green',
+      autoClose: DEFAULT_NOTIFICATION_DURATION_MS,
+    });
+  });
+
+  it('allows the same message again after it has been closed', () => {
+    notifyError('Network error');
+    notifications.hide('error:Network error');
+    notifyError('Network error');
+
+    expect(allNotifications()).toHaveLength(1);
+    expect(allNotifications()[0].autoClose).toBe(ERROR_NOTIFICATION_DURATION_MS);
+  });
+
+  it('prioritizes errors over success and info notifications', () => {
+    notifySuccess('Success 1');
+    notifyInfo('Info 1');
+    notifySuccess('Success 2');
+    notifyInfo('Newest normal');
+    notifyError('Important error');
+
+    expect(state().notifications.map((item) => item.message)).toContain('Important error');
+    expect(state().queue).toHaveLength(1);
+    expect(state().queue[0].message).toBe('Newest normal');
+  });
+
+  it('protects a queued error from a newer normal notification', () => {
+    for (let index = 1; index <= 4; index += 1) notifyError(`Error ${index}`);
+    notifySuccess('Later success');
+
+    expect(state().queue).toHaveLength(1);
+    expect(state().queue[0].message).toBe('Error 4');
   });
 });

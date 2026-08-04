@@ -36,6 +36,14 @@ describe('frontend architecture rules', () => {
     expect(violations).toEqual([]);
   });
 
+  it('routes notification creation through the shared notification manager', () => {
+    const manager = join(sourceRoot, 'shared', 'notifications', 'notifications.js');
+    const violations = sourceFiles().filter((file) => /\.(?:js|jsx)$/.test(file) && file !== manager)
+      .filter((file) => /\bnotifications\.show\s*\(/.test(readFileSync(file, 'utf8')))
+      .map((file) => relative(sourceRoot, file));
+    expect(violations).toEqual([]);
+  });
+
   it('keeps attendance status styles inside the attendance feature', () => {
     const violations = sourceFiles().filter((file) => /\.css$/.test(file) && !file.includes(`${sep}features${sep}attendance${sep}`))
       .filter((file) => /status(?:Select|Option)|data-status/.test(readFileSync(file, 'utf8')))

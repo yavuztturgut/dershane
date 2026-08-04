@@ -1,11 +1,10 @@
 import { Button, Group, PasswordInput, SimpleGrid, Text, TextInput, Title } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/use-auth';
 import { getErrorMessage } from '../../../shared/api/api-client';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { Surface } from '../../../components/ui/Surface/Surface';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
@@ -30,14 +29,14 @@ export function ProfilePage() {
   async function saveProfile(values) {
     try {
       await updateProfile(values);
-      notifications.show({ color: 'green', message: t('updated') });
+      notifySuccess(t('updated'));
     } catch (error) { notifyError(getErrorMessage(error)); }
   }
 
   async function savePassword(values) {
     try {
       await changePassword({ current_password: values.current_password, new_password: values.new_password });
-      notifications.show({ color: 'green', message: t('passwordChanged') });
+      notifySuccess(t('passwordChanged'));
       navigate('/login');
     } catch (error) { notifyError(getErrorMessage(error)); }
   }

@@ -1,12 +1,11 @@
 import { ActionIcon, Alert, Button, Group, Table, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../../shared/api/api-client';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { useLookups } from '../../lookups/use-lookups';
@@ -46,7 +45,7 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const saveMutation = useMutation({
     mutationFn: (values) => editingId ? api.update(editingId, values) : api.create(values),
     onSuccess: (result) => {
-      notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
+      notifySuccess(t(editingId ? 'updated' : 'created'));
       if (editingId) queryClient.setQueryData(queryKeys.entities.detail(entity, editingId), result);
       setOpened(false);
       invalidate();
@@ -57,7 +56,7 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const deleteMutation = useMutation({
     mutationFn: api.remove,
     onSuccess: (_, id) => {
-      notifications.show({ color: 'green', message: t('deleted') });
+      notifySuccess(t('deleted'));
       queryClient.removeQueries({ queryKey: queryKeys.entities.detail(entity, id) });
       invalidate();
     },

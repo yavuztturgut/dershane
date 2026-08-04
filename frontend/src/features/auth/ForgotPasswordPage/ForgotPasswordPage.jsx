@@ -1,10 +1,9 @@
 import { Anchor, Button, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { notifications } from '@mantine/notifications';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { authApi } from '../auth.api';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { getErrorMessage } from '../../../shared/api/api-client';
 import { AuthLayout } from '../AuthLayout/AuthLayout';
 
@@ -15,7 +14,7 @@ export function ForgotPasswordPage() {
   async function submit(values) {
     try {
       await authApi.forgotPassword({ ...values, language: i18n.resolvedLanguage === 'tr' ? 'tr' : 'en' });
-      notifications.show({ color: 'green', message: t('resetEmailSent') });
+      notifySuccess(t('resetEmailSent'));
     } catch (error) {
       notifyError(getErrorMessage(error));
     }

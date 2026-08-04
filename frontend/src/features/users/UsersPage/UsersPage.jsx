@@ -1,7 +1,6 @@
 import { ActionIcon, Alert, Button, Group, Pagination, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
@@ -13,7 +12,7 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
 import { getErrorMessage } from '../../../shared/api/api-client';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { useLookups } from '../../lookups/use-lookups';
@@ -71,7 +70,7 @@ export function UsersPage() {
       return editingId ? usersApi.update(editingId, payload) : usersApi.create(payload);
     },
     onSuccess: (user) => {
-      notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
+      notifySuccess(t(editingId ? 'updated' : 'created'));
       if (editingId) queryClient.setQueryData(queryKeys.users.detail(editingId), user);
       setOpened(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
@@ -82,7 +81,7 @@ export function UsersPage() {
     onError: (error) => notifyError(getErrorMessage(error)),
   });
   const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: (_, id) => {
-    notifications.show({ color: 'green', message: t('deleted') });
+    notifySuccess(t('deleted'));
     queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });

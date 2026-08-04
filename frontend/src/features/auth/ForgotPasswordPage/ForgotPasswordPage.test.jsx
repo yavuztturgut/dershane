@@ -7,7 +7,7 @@ import i18n from '../../../app/i18n';
 
 const forgotPassword = vi.fn(async () => ({}));
 vi.mock('../auth.api', () => ({ authApi: { forgotPassword: (...args) => forgotPassword(...args) } }));
-vi.mock('@mantine/notifications', () => ({ notifications: { show: vi.fn(), cleanQueue: vi.fn() } }));
+vi.mock('../../../shared/notifications/notifications', () => ({ notifyError: vi.fn(), notifySuccess: vi.fn() }));
 
 import { ForgotPasswordPage } from './ForgotPasswordPage';
 

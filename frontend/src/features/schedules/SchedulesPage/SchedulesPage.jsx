@@ -3,7 +3,6 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useMediaQuery } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
 import {
   IconAlertCircle, IconChevronLeft, IconChevronRight, IconPlus,
 } from '@tabler/icons-react';
@@ -21,7 +20,7 @@ import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { DualPanelModal } from '../../../components/ui/DualPanelModal/DualPanelModal';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
 import { getErrorMessage } from '../../../shared/api/api-client';
-import { notifyError } from '../../../shared/notifications/notifications';
+import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { useLookups } from '../../lookups/use-lookups';
@@ -144,7 +143,7 @@ export function SchedulesPage() {
       return editingId ? schedulesApi.update(editingId, payload) : schedulesApi.create(payload);
     },
     onSuccess: (schedule) => {
-      notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
+      notifySuccess(t(editingId ? 'updated' : 'created'));
       queryClient.invalidateQueries({ queryKey: queryKeys.schedules.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
       if (editingId) {
@@ -166,7 +165,7 @@ export function SchedulesPage() {
   const deleteMutation = useMutation({
     mutationFn: schedulesApi.remove,
     onSuccess: () => {
-      notifications.show({ color: 'green', message: t('deleted') });
+      notifySuccess(t('deleted'));
       setOpened(false);
       queryClient.invalidateQueries({ queryKey: queryKeys.schedules.lists() });
       queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
