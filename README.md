@@ -1,328 +1,342 @@
-# Dershane Node API
+# Dershane Portalı
 
-Basit bir dershane yonetim sistemi icin gelistirilmis Node.js + Express backend API projesidir. React tabanli yonetim arayuzu ve API endpointleri bulunur.
+Dershane Portalı; yöneticilerin kullanıcıları, sınıfları, dersleri, ders programlarını ve yoklamaları yönetebildiği, öğretmenlerin kendi programlarından yoklama alabildiği, öğrencilerin ise programlarını ve yoklama geçmişlerini takip edebildiği full-stack bir dershane yönetim sistemidir.
 
-Frontend uygulamasinin mimari kurallari icin [frontend architecture](docs/frontend-architecture.md) dokumanina bak.
+Proje, React tabanlı responsive bir web arayüzü ile Node.js ve Express üzerinde çalışan REST API'den oluşur. Uygulama verilerini PostgreSQL'de saklar ve `admin`, `teacher` ve `student` rolleri için farklı yetki ve ekranlar sunar.
 
-## Ozellikler
+## Özellikler
 
-- JWT tabanli login sistemi
-- Role-based authorization
-- Admin, teacher ve student rolleri
-- Kullanici CRUD islemleri
-- Rol CRUD islemleri
-- Sinif/alan CRUD islemleri
-- Ders CRUD islemleri
-- Ders programi CRUD islemleri
-- PostgreSQL veritabani
-- Sifrelerin bcrypt ile hashlenmesi
+### Yönetici
+
+- Toplam kullanıcı, ders, sınıf ve program sayılarını gösteren yönetim paneli
+- Arama, filtreleme, sıralama ve sayfalama destekli kullanıcı yönetimi
+- Kullanıcı oluşturma, güncelleme, aktif/pasif duruma alma ve silme
+- Sınıf ve ders tanımlarını oluşturma, güncelleme ve silme
+- FullCalendar üzerinden ders programı oluşturma, düzenleme ve silme
+- Öğretmen, sınıf veya ders çakışmalarını engelleyen program doğrulaması
+- Sınıf, öğrenci ve tarih aralığına göre filtrelenebilen günlük yoklama raporları
+- Yoklama süresi dolmuş derslerde yönetici düzeltmesi
+
+### Öğretmen
+
+- Yalnızca kendisine atanmış dersleri içeren kişisel program
+- Ders başladıktan sonra açılan sınıf yoklaması
+- Öğrencileri `var`, `yok`, `geç` veya `izinli` olarak işaretleme
+- Ders bitiminden 24 saat sonra otomatik olarak kilitlenen yoklama kayıtları
+
+### Öğrenci
+
+- Yalnızca kendi sınıfına ait ders programı
+- Tarih aralığına göre filtrelenebilen kişisel yoklama geçmişi
+- Yoklama durumlarına göre özet sayaçlar
+
+### Ortak Uygulama Özellikleri
+
+- HttpOnly cookie tabanlı güvenli oturum yönetimi
+- Profil bilgilerini ve şifreyi güncelleme
+- Tek kullanımlık bağlantı ve e-posta ile şifre sıfırlama
+- Türkçe ve İngilizce arayüz
+- Açık ve koyu tema
+- Masaüstü, tablet ve mobil ekranlara uyumlu responsive tasarım
+- Rol bazlı sayfa ve menü görünürlüğü
+- Form doğrulama, bildirimler, yükleme durumları ve global hata ekranı
+- Silme ve kaydedilmemiş değişiklikler için onay pencereleri
 
 ## Teknolojiler
 
-- Node.js
-- Express.js
-- PostgreSQL
-- pg
-- bcrypt
-- jsonwebtoken
-- dotenv
-- nodemon
+### Frontend
 
-## Proje Yapisi
+- React 19 ve Vite
+- Mantine UI ve Tabler Icons
+- Tailwind CSS
+- React Router
+- TanStack Query
+- Axios
+- FullCalendar
+- i18next ve react-i18next
+
+### Backend
+
+- Node.js ve Express 5
+- PostgreSQL ve `pg`
+- JWT ve cookie-parser
+- bcrypt
+- Nodemailer
+- CORS ve dotenv
+
+### Test ve Kod Kalitesi
+
+- Vitest
+- React Testing Library
+- Node.js yerleşik test runner
+- Oxlint
+
+## Proje Yapısı
 
 ```text
 .
-+-- app.js
-+-- server.js
-+-- db/
-|   +-- pool.js
-|   +-- create.sql
-+-- middlewares/
-|   +-- auth-middleware.js
-|   +-- role-middleware.js
-+-- components/
-|   +-- auth/
-|   |   +-- auth.route.js
-|   |   +-- auth.controller.js
-|   |   +-- auth.service.js
-|   |   +-- auth.repository.js
-|   +-- users/
-|   |   +-- users.route.js
-|   |   +-- users.controller.js
-|   |   +-- users.service.js
-|   |   +-- users.repository.js
-|   +-- roles/
-|   |   +-- roles.route.js
-|   |   +-- roles.controller.js
-|   |   +-- roles.service.js
-|   |   +-- roles.repository.js
-|   +-- classes/
-|   |   +-- classes.route.js
-|   |   +-- classes.controller.js
-|   |   +-- classes.service.js
-|   |   +-- classes.repository.js
-|   +-- courses/
-|   |   +-- courses.route.js
-|   |   +-- courses.controller.js
-|   |   +-- courses.service.js
-|   |   +-- courses.repository.js
-|   +-- schedules/
-|       +-- schedules.route.js
-|       +-- schedules.controller.js
-|       +-- schedules.service.js
-|       +-- schedules.repository.js
+├── app.js                       # Express uygulaması ve API router kayıtları
+├── server.js                    # Backend başlangıç noktası
+├── components/                 # Backend feature modülleri
+│   ├── auth/
+│   ├── attendance/
+│   ├── classes/
+│   ├── courses/
+│   ├── dashboard/
+│   ├── roles/
+│   ├── schedules/
+│   └── users/
+├── db/
+│   ├── create.sql              # Yeni veritabanı şeması
+│   ├── migrate.js              # Migration çalıştırıcısı
+│   ├── migrations/             # Sıralı SQL migration dosyaları
+│   └── pool.js                 # PostgreSQL bağlantı havuzu
+├── middlewares/                # Auth, rol, async ve hata middleware'leri
+├── utils/                      # Ortak backend yardımcıları
+├── test/                       # Backend testleri
+├── frontend/
+│   ├── src/
+│   │   ├── app/                # Provider, router, guard ve i18n kurulumu
+│   │   ├── components/         # Ortak UI ve layout bileşenleri
+│   │   ├── features/           # Ekranlar, API istemcileri ve feature kodları
+│   │   ├── lib/                # Axios, React Query ve bildirim yardımcıları
+│   │   └── locales/            # Türkçe ve İngilizce çeviriler
+│   └── package.json
+└── docs/                       # Frontend ve backend mimari kuralları
 ```
 
-Component dosyalarinin gorevi:
+Backend feature'ları aşağıdaki katman akışını izler:
 
-- `*.route.js`: Endpoint adreslerini ve middleware siralamasini tanimlar.
-- `*.controller.js`: `req` bilgisini alir, service sonucunu HTTP response olarak dondurur.
-- `*.service.js`: Is kurallarini ve validasyonlari yonetir.
-- `*.repository.js`: PostgreSQL sorgularini calistirir.
+```text
+route → controller → service → repository → PostgreSQL
+```
+
+Frontend kodu da kullanıcı, program, yoklama ve kimlik doğrulama gibi alanlara göre feature-bazlı olarak ayrılmıştır. Daha ayrıntılı kurallar için:
+
+- [Frontend Architecture](docs/frontend-architecture.md)
+- [Backend Architecture](docs/backend-architecture.md)
+
+## Gereksinimler
+
+- Node.js ve npm
+- PostgreSQL
+- Şifre sıfırlama e-postalarını göndermek için bir SMTP hesabı
+
+Projede Docker yapılandırması veya otomatik veritabanı seed komutu bulunmadığından PostgreSQL veritabanı ve başlangıç kayıtları manuel olarak hazırlanır.
 
 ## Kurulum
 
-Bagimliliklari yukle:
+### 1. Projeyi hazırlayın
+
+Backend bağımlılıklarını proje kökünde yükleyin:
 
 ```bash
 npm install
 ```
 
-`.env` dosyasi olustur:
+Frontend bağımlılıklarını yükleyin:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+### 2. Backend ortam değişkenlerini ayarlayın
+
+Proje kökündeki `.env.example` dosyasını `.env` adıyla kopyalayın ve değerleri doldurun:
 
 ```env
 PORT=3000
-DATABASE_URL=postgres://postgres:123456@localhost:5432/postgres
-JWT_SECRET=your-secret-key
+DATABASE_URL=postgres://postgres:password@localhost:5432/dershane
+JWT_SECRET=replace-with-a-long-random-secret
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASSWORD=your-smtp-password
+SMTP_FROM=no-reply@example.com
+CLIENT_URL=http://localhost:5173
+RESET_URL_BASE=http://localhost:5173/reset-password
 ```
 
-Yeni kurulumda PostgreSQL tarafinda `create.sql` dosyasindaki tablolari calistir. Mevcut kurulumlarda migrasyonlari uygula:
+| Değişken | Açıklama |
+| --- | --- |
+| `PORT` | Backend HTTP portu. Varsayılan değer `3000`'dir. |
+| `DATABASE_URL` | PostgreSQL bağlantı adresi. |
+| `JWT_SECRET` | JWT imzalamak ve doğrulamak için kullanılan gizli anahtar. |
+| `SMTP_HOST` | Şifre sıfırlama e-postaları için SMTP sunucusu. |
+| `SMTP_PORT` | SMTP sunucusunun portu. |
+| `SMTP_SECURE` | Güvenli SMTP bağlantısının kullanılıp kullanılmayacağı. |
+| `SMTP_USER` | SMTP kullanıcı adı. |
+| `SMTP_PASSWORD` | SMTP şifresi. |
+| `SMTP_FROM` | Gönderilen e-postalarda kullanılacak gönderen adresi. |
+| `CLIENT_URL` | CORS tarafından izin verilen frontend adresi. |
+| `RESET_URL_BASE` | E-postadaki şifre sıfırlama bağlantısının temel adresi. |
+
+SMTP ayarları yapılmadan uygulamanın diğer bölümleri çalışır; ancak şifre sıfırlama e-postası teslim edilemez. Gizli değerleri repoya eklemeyin.
+
+### 3. Frontend ortam değişkenini ayarlayın
+
+`frontend/.env.example` dosyasını `frontend/.env` adıyla kopyalayın:
+
+```env
+VITE_API_URL=http://localhost:3000/api
+```
+
+`VITE_API_URL`, frontend'in kullanacağı API temel adresidir.
+
+### 4. Veritabanını hazırlayın
+
+Yeni bir kurulumda önce PostgreSQL veritabanını oluşturun, ardından `db/create.sql` dosyasını çalıştırın. Örneğin `psql` ile:
+
+```bash
+psql -d dershane -f db/create.sql
+```
+
+Uygulamanın kullandığı sabit sistem rollerini ekleyin:
+
+```sql
+INSERT INTO roles (name)
+VALUES ('admin'), ('teacher'), ('student')
+ON CONFLICT (name) DO NOTHING;
+```
+
+Şema oluşturulduktan sonra migration'ları da çalıştırın. Böylece ek indeksler uygulanır ve migration geçmişi `schema_migrations` tablosunda kaydedilir:
 
 ```bash
 npm run migrate
 ```
 
-Gelisitirme sunucusunu baslat:
+İlk yönetici hesabı için bir bcrypt şifre hash'i üretin:
+
+```bash
+node -e "require('bcrypt').hash('ChangeMe123!', 10).then(console.log)"
+```
+
+Komutun ürettiği hash'i aşağıdaki sorgudaki yer tutucuyla değiştirerek başlangıç yöneticisini oluşturun:
+
+```sql
+INSERT INTO users (role_id, name, email, password, is_active)
+SELECT id, 'Sistem Yöneticisi', 'admin@example.com', 'BCRYPT_HASH_BURAYA', true
+FROM roles
+WHERE name = 'admin';
+```
+
+İlk girişten sonra örnek e-posta adresini ve şifreyi profil ekranından değiştirin.
+
+Mevcut bir veritabanını güncellemek için migration'ları çalıştırın:
+
+```bash
+npm run migrate
+```
+
+Migration dosyaları isim sırasına göre uygulanır; daha önce tamamlanan migration'lar tekrar çalıştırılmaz.
+
+### 5. Uygulamayı çalıştırın
+
+Bir terminalde backend geliştirme sunucusunu başlatın:
 
 ```bash
 npm run dev
 ```
 
-Production calistirma:
+Başka bir terminalde frontend'i başlatın:
 
 ```bash
-npm start
+cd frontend
+npm run dev
 ```
 
-## Veritabani Tablolari
+Varsayılan geliştirme adresleri:
 
-Projede temel olarak 5 tablo vardir:
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+- API temel adresi: `http://localhost:3000/api`
 
-- `roles`: admin, teacher, student gibi rolleri tutar.
-- `classes`: Sozel, Sayisal, TM, Dil gibi sinif/alan bilgisini tutar.
-- `users`: tum kullanicilari tutar.
-- `courses`: dersleri tutar.
-- `schedules`: ders programini tutar.
+## NPM Komutları
 
-## Auth Mantigi
+### Backend
 
-Login disindaki endpointler token ile korunur. Token header icinde gonderilir:
+| Komut | Açıklama |
+| --- | --- |
+| `npm run dev` | Backend'i Nodemon ile geliştirme modunda başlatır. |
+| `npm start` | Backend'i production başlangıç komutuyla çalıştırır. |
+| `npm run migrate` | Uygulanmamış PostgreSQL migration'larını çalıştırır. |
+| `npm test` | Backend servis ve yardımcı testlerini çalıştırır. |
 
-```text
-Authorization: Bearer TOKEN
+### Frontend
+
+Komutları `frontend/` dizininde çalıştırın.
+
+| Komut | Açıklama |
+| --- | --- |
+| `npm run dev` | Vite geliştirme sunucusunu başlatır. |
+| `npm run build` | Production frontend paketini oluşturur. |
+| `npm run preview` | Oluşturulan production paketini yerel olarak sunar. |
+| `npm run lint` | Frontend kodunu Oxlint ile kontrol eder. |
+| `npm test` | Vitest ve React Testing Library testlerini çalıştırır. |
+
+## Kimlik Doğrulama ve Güvenlik
+
+- Başarılı girişten sonra JWT, JavaScript tarafından okunamayan `access_token` adlı HttpOnly cookie'ye yazılır.
+- Frontend API isteklerini cookie ile göndermek için Axios'ta `withCredentials` kullanır.
+- Backend her korumalı istekte JWT'yi doğrular ve kullanıcının güncel rolünü, aktiflik durumunu, sınıfını ve `token_version` değerini PostgreSQL'den tekrar okur.
+- Şifre değiştirme veya sıfırlama işlemi `token_version` değerini artırarak mevcut oturumları geçersiz kılar.
+- Şifreler bcrypt ile hashlenir ve en az sekiz karakter olmalıdır.
+- Şifre sıfırlama tokenları veritabanında yalnızca SHA-256 hash olarak tutulur, tek kullanımlıktır ve 30 dakika sonra geçersiz olur.
+- Giriş ve şifre sıfırlama endpointleri process içi rate limiting ile korunur.
+- Backend CORS isteklerini yalnızca `CLIENT_URL` üzerinden ve credentials desteğiyle kabul eder.
+- Beklenen API hataları kararlı bir `{ error, errorCode }` yapısıyla döner; beklenmeyen hatalarda dahili ayrıntılar istemciye açılmaz.
+
+## Roller ve Yetkiler
+
+| Özellik | Admin | Öğretmen | Öğrenci |
+| --- | :---: | :---: | :---: |
+| Yönetim paneli | ✓ | — | — |
+| Kullanıcı, sınıf ve ders yönetimi | ✓ | — | — |
+| Tüm ders programını yönetme | ✓ | — | — |
+| Kendi ders programını görme | ✓ | ✓ | ✓ |
+| Ders yoklaması alma | ✓ | Kendi dersi | — |
+| Yoklama raporlarını görme | ✓ | — | Kendi geçmişi |
+| Profil ve şifre güncelleme | ✓ | ✓ | ✓ |
+
+Öğretmenler yalnızca kendilerine atanmış dersleri, öğrenciler ise yalnızca bağlı oldukları sınıfın programını görür. Bu filtreleme yalnızca arayüzde değil, backend repository sorgularında da uygulanır.
+
+## API Modülleri
+
+Tüm API endpointleri `/api` altında sunulur:
+
+| Modül | Prefix | Açıklama |
+| --- | --- | --- |
+| Auth | `/api/auth` | Giriş, çıkış, profil ve şifre işlemleri |
+| Users | `/api/users` | Kullanıcı yönetimi, arama, filtreleme ve sayfalama |
+| Roles | `/api/roles` | Sabit sistem rollerini listeleme |
+| Classes | `/api/classes` | Sınıf yönetimi |
+| Courses | `/api/courses` | Ders yönetimi |
+| Schedules | `/api/schedules` | Rol bazlı program ve ders yoklaması işlemleri |
+| Attendance | `/api/attendance` | Kişisel yoklama geçmişi ve yönetici raporları |
+| Dashboard | `/api/dashboard` | Yönetici özet metrikleri |
+
+## Testler
+
+Backend testleri servis kurallarını, kullanıcı doğrulamalarını, program çakışmalarını, parola sıfırlamayı, rate limiting'i ve yoklama yetkilerini kapsar:
+
+```bash
+npm test
 ```
 
-Token dogrulama:
+Frontend testleri formları, route guard'ları, sidebar yetkilerini, hata ve yükleme ekranlarını, takvim etkileşimlerini ve yoklama akışlarını kapsar:
 
-- `auth-middleware.js` token var mi, format dogru mu ve token gecerli mi kontrol eder.
-- Gecerli token varsa token payload bilgisini `req.user` icine koyar.
-
-Rol kontrolu:
-
-- `role-middleware.js` kullanicinin ilgili endpoint icin gerekli role sahip olup olmadigini kontrol eder.
-- Admin olmayan kullanici admin endpointlerine erisirse `403 Forbidden` alir.
-
-## Endpoint Ozeti
-
-Base URL:
-
-```text
-http://localhost:3000
+```bash
+cd frontend
+npm test
 ```
 
-### Auth
+Production frontend paketini doğrulamak için:
 
-```text
-POST /api/auth/login
-GET  /api/auth/profile
-PATCH /api/auth/profile
-POST /api/auth/change-password
-POST /api/auth/forgot-password
-POST /api/auth/reset-password
-POST /api/auth/logout
+```bash
+cd frontend
+npm run lint
+npm run build
 ```
-
-Login body:
-
-```json
-{
-  "email": "admin@example.com",
-  "password": "123456"
-}
-```
-
-### Users
-
-Tum users endpointleri admin yetkisi ister.
-
-```text
-GET    /api/users?page=1&pageSize=25&search=&role_id=&class_id=&is_active=&sort=&order=
-GET    /api/users/:id
-POST   /api/users
-PUT    /api/users/:id
-DELETE /api/users/:id
-```
-
-User create body:
-
-```json
-{
-  "role_id": 3,
-  "class_id": 2,
-  "name": "Yavuz",
-  "email": "yavuz@example.com",
-  "password": "123456"
-}
-```
-
-### Roles
-
-Roller sistem davranisini belirleyen sabit `admin`, `teacher` ve `student` kayitlaridir. Liste admin yetkisi ister; degistirme endpointleri `405` doner.
-
-```text
-GET    /api/roles
-GET    /api/roles/:id
-POST   /api/roles
-PUT    /api/roles/:id
-DELETE /api/roles/:id
-```
-
-Role create body:
-
-```json
-{
-  "name": "admin"
-}
-```
-
-### Classes
-
-Class listeleme icin token yeterlidir. Create, update ve delete islemleri admin yetkisi ister.
-
-```text
-GET    /api/classes
-GET    /api/classes/:id
-POST   /api/classes
-PUT    /api/classes/:id
-DELETE /api/classes/:id
-```
-
-Class create body:
-
-```json
-{
-  "name": "Sayisal"
-}
-```
-
-### Courses
-
-Course listeleme icin token yeterlidir. Create, update ve delete islemleri admin yetkisi ister.
-
-```text
-GET    /api/courses
-GET    /api/courses/:id
-POST   /api/courses
-PUT    /api/courses/:id
-DELETE /api/courses/:id
-```
-
-Course create body:
-
-```json
-{
-  "name": "Matematik"
-}
-```
-
-### Schedules
-
-Schedule listeleme token ister ve role gore filtrelenir:
-
-- Admin tum ders programini gorur.
-- Teacher sadece kendi derslerini gorur.
-- Student sadece kendi class programini gorur.
-
-Create, update ve delete islemleri admin yetkisi ister.
-
-```text
-GET    /api/schedules
-GET    /api/schedules/:id
-POST   /api/schedules
-PUT    /api/schedules/:id
-DELETE /api/schedules/:id
-GET    /api/schedules/:id/attendance
-PUT    /api/schedules/:id/attendance
-```
-
-Program listesi `start`, `end`, `course_id`, `class_id` ve `teacher_id` parametrelerini destekler. Ayni ogretmen veya sinif icin cakisan dersler reddedilir.
-
-### Attendance
-
-```text
-GET /api/attendance/me
-GET /api/attendance/report
-```
-
-Ogretmen kendisine atanmis ders icin yoklama alir; ders bitiminden 24 saat sonra kayit kilitlenir. Admin kilit sonrasinda da duzeltme yapabilir. Durumlar `present`, `absent`, `late` ve `excused` degerleridir.
-
-### Dashboard
-
-```text
-GET /api/dashboard/summary
-```
-
-Schedule create body:
-
-```json
-{
-  "course_id": 1,
-  "class_id": 2,
-  "teacher_id": 5,
-  "start_time": "2026-07-15 09:00:00",
-  "end_time": "2026-07-15 10:30:00"
-}
-```
-
-## Ornek Roller
-
-Baslangic icin veritabanina su roller eklenebilir:
-
-```sql
-INSERT INTO roles (name)
-VALUES ('admin'), ('teacher'), ('student');
-```
-
-## Ornek Siniflar
-
-```sql
-INSERT INTO classes (name)
-VALUES ('Sozel'), ('Sayisal'), ('TM'), ('Dil');
-```
-
-## Notlar
-
-- `users.password` alaninda duz sifre degil, bcrypt hash tutulur.
-- `schedules.teacher_id`, `users.id` degeridir ve bu kullanicinin role degeri `teacher` olmalidir.
-- `updated_at` alanlari update sorgularinda manuel olarak `NOW()` ile guncellenir.
-- Delete islemleri hard delete seklindedir. Iliskili kayit varsa PostgreSQL foreign key hatasi doner.
