@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell, Group, NavLink, Select, Stack, Text } from '@mantine/core';
 import {
-  IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
+  IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
   IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -11,12 +11,12 @@ import { LanguageToggle } from '../../ui/LanguageToggle/LanguageToggle';
 
 const adminItems = [
   { to: '/', key: 'dashboard', icon: IconDashboard },
-  { to: '/users', key: 'users', icon: IconUsers },
-  { to: '/roles', key: 'roles', icon: IconUserShield },
-  { to: '/classes', key: 'classes', icon: IconSchool },
-  { to: '/courses', key: 'courses', icon: IconBook2 },
   { to: '/schedules', key: 'schedules', icon: IconCalendarEvent },
   { to: '/attendance', key: 'attendance', icon: IconChecklist },
+  { to: '/users', key: 'users', icon: IconUsers },
+  { to: '/classes', key: 'classes', icon: IconSchool },
+  { to: '/roles', key: 'roles', icon: IconUserShield },
+  { to: '/profile', key: 'profile', icon: IconUser },
 ];
 
 export function AppSidebar({ collapsed, onToggle, onNavigate }) {
@@ -27,6 +27,7 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
   const items = user.role_name === 'admin' ? adminItems : [
     { to: '/schedules', key: 'mySchedule', icon: IconCalendarEvent },
     ...(user.role_name === 'student' ? [{ to: '/attendance', key: 'attendance', icon: IconChecklist }] : []),
+    { to: '/profile', key: 'profile', icon: IconUser },
   ];
 
   async function handleLogout() {
@@ -62,15 +63,6 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
             className="mb-1 min-h-11 rounded-lg"
           />
         ))}
-        <NavLink
-          component={Link}
-          to="/profile"
-          label={collapsed ? undefined : t('profile')}
-          leftSection={<IconUser size={19} />}
-          active={location.pathname === '/profile'}
-          onClick={onNavigate}
-          className="mb-1 min-h-11 rounded-lg"
-        />
       </div>
 
       <div className="border-t border-gray-100 p-3 dark:border-dark-5">
