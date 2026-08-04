@@ -1,0 +1,6 @@
+.event { height: 100%; overflow: hidden; padding: .35rem .45rem; color: white; cursor: pointer; }
+.compact { display: flex; align-items: center; padding-block: .15rem; }
+.compact .meta { display: none; }
+.course, .meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.course { font-weight: 700; }
+.meta { margin-top: .125rem; font-size: .72rem; opacity: .92; }

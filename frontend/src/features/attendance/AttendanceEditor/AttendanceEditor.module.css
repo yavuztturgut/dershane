@@ -1,0 +1,17 @@
+.present { background: var(--mantine-color-green-light); color: var(--mantine-color-green-light-color); border-color: var(--mantine-color-green-outline); font-weight: 600; }
+.absent { background: var(--mantine-color-red-light); color: var(--mantine-color-red-light-color); border-color: var(--mantine-color-red-outline); font-weight: 600; }
+.late { background: var(--mantine-color-orange-light); color: var(--mantine-color-orange-light-color); border-color: var(--mantine-color-orange-outline); font-weight: 600; }
+.excused { background: var(--mantine-color-pink-light); color: var(--mantine-color-pink-light-color); border-color: var(--mantine-color-pink-outline); font-weight: 600; }
+
+.statusOption {
+  width: 100%;
+  padding: .45rem .75rem;
+  border: thin solid currentColor;
+  border-radius: var(--mantine-radius-md);
+  font-weight: 600;
+}
+
+.statusOption[data-status='present'] { background: var(--mantine-color-green-light); color: var(--mantine-color-green-light-color); }
+.statusOption[data-status='absent'] { background: var(--mantine-color-red-light); color: var(--mantine-color-red-light-color); }
+.statusOption[data-status='late'] { background: var(--mantine-color-orange-light); color: var(--mantine-color-orange-light-color); }
+.statusOption[data-status='excused'] { background: var(--mantine-color-pink-light); color: var(--mantine-color-pink-light-color); }

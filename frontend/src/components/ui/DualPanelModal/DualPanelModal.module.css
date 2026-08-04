@@ -1,0 +1,116 @@
+.content {
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+}
+
+.body {
+  padding: 0;
+}
+
+.panels {
+  display: grid;
+  grid-template-columns: minmax(0, 40fr) minmax(0, 60fr);
+  gap: 1rem;
+  width: 100%;
+  height: 78dvh;
+}
+
+.panel {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: thin solid var(--mantine-color-gray-3);
+  border-radius: var(--mantine-radius-xl);
+  background: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-xl);
+}
+
+.header,
+.footer {
+  flex: 0 0 auto;
+  padding: 1rem 1.25rem;
+}
+
+.header {
+  display: flex;
+  min-height: 4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: thin solid var(--mantine-color-gray-2);
+}
+
+.footer {
+  border-top: thin solid var(--mantine-color-gray-2);
+}
+
+.scrollBody {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.mobileTabs,
+.mobileClose {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .content {
+    border-radius: 0;
+    background: var(--mantine-color-body);
+  }
+
+  .panels {
+    display: flex;
+    width: 100%;
+    height: 100dvh;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .mobileTabs {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: .75rem;
+    padding: .75rem 1rem;
+    border-bottom: thin solid var(--mantine-color-gray-2);
+  }
+
+  .tabsControl {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .mobileClose {
+    display: inline-flex;
+  }
+
+  .panel {
+    display: none;
+    flex: 1 1 auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .panel[data-active='true'] {
+    display: flex;
+  }
+
+  .desktopClose {
+    display: none;
+  }
+}
+
+:global([data-mantine-color-scheme='dark']) .panel,
+:global([data-mantine-color-scheme='dark']) .header,
+:global([data-mantine-color-scheme='dark']) .footer,
+:global([data-mantine-color-scheme='dark']) .mobileTabs {
+  border-color: var(--mantine-color-dark-4);
+}

@@ -1,29 +1,21 @@
 {
-  "name": "dershane-node",
-  "version": "1.0.0",
-  "description": "",
-  "main": "server.js",
+  "name": "dershane",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js",
-    "migrate": "node db/migrate.js",
-    "test": "node --test test/*.test.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cookie-parser": "^1.4.7",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "jsonwebtoken": "^9.0.3",
-    "nodemailer": "^9.0.3",
-    "pg": "^8.22.0"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
+    "dev": "npm run dev --workspace backend",
+    "start": "npm run start --workspace backend",
+    "migrate": "npm run migrate --workspace backend",
+    "test": "npm run test:unit && npm run test:frontend",
+    "test:unit": "npm test --workspace backend",
+    "test:integration": "npm run test:integration --workspace backend",
+    "test:frontend": "npm test --workspace frontend",
+    "test:frontend:utc": "node scripts/test-frontend-utc.js",
+    "lint": "npm run lint --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "verify": "npm run test:unit && npm run test:frontend:utc && npm run lint && npm run build"
   }
 }

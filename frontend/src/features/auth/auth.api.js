@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '../../shared/api/api-client';
 
 export const authApi = {
   login: async (data) => (await apiClient.post('/auth/login', data)).data.user,

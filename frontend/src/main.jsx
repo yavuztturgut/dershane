@@ -6,7 +6,7 @@ import '@mantine/notifications/styles.css';
 import './index.css';
 import { AppProviders } from './app/providers';
 import { AppRouter } from './app/router';
-import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { ErrorBoundary } from './components/ui/ErrorBoundary/ErrorBoundary';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

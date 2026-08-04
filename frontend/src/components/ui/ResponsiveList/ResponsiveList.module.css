@@ -1,0 +1,8 @@
+.mobile {
+  display: none;
+}
+
+@media (max-width: 48rem) {
+  .desktop { display: none; }
+  .mobile { display: grid; gap: var(--mantine-spacing-sm); }
+}

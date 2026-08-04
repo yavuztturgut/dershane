@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { PageLoader } from '../components/ui/PageLoader';
+import { PageLoader } from '../components/ui/PageLoader/PageLoader';
 import { useAuth } from '../features/auth/use-auth';
 
 export function ProtectedRoute() {

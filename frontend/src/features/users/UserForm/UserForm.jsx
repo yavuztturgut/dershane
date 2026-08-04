@@ -1,0 +1,5 @@
+import { Button, Checkbox, Group, Select, SimpleGrid, TextInput } from '@mantine/core';
+
+export function UserForm({ form, editingId, roleOptions, classOptions, saving, onCancel, onSubmit, t }) {
+  return <form onSubmit={form.onSubmit(onSubmit)}><SimpleGrid cols={{ base: 1, sm: 2 }}><Select label={t('role')} data={roleOptions} required {...form.getInputProps('role_id')} /><Select label={t('class')} data={classOptions} clearable {...form.getInputProps('class_id')} /></SimpleGrid><TextInput label={t('name')} required mt="sm" {...form.getInputProps('name')} /><TextInput label={t('email')} required mt="sm" {...form.getInputProps('email')} /><TextInput label={t('password')} required={!editingId} type="password" mt="sm" {...form.getInputProps('password')} /><Checkbox label={t('active')} mt="md" {...form.getInputProps('is_active', { type: 'checkbox' })} /><Group justify="flex-end" mt="lg"><Button variant="default" onClick={onCancel}>{t('cancel')}</Button><Button type="submit" loading={saving}>{t('save')}</Button></Group></form>;
+}

@@ -1,0 +1,6 @@
+.surface {
+  border: thin solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--mantine-color-body);
+  box-shadow: var(--mantine-shadow-xs);
+}

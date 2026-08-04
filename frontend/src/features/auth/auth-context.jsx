@@ -1,13 +1,13 @@
 import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { authApi } from './auth.api';
-import { queryClient } from '../../lib/query-client';
-import { setUnauthorizedHandler } from '../../lib/api-client';
-import { notifyError } from '../../lib/notifications';
+import { queryClient } from '../../shared/query/query-client';
+import { setUnauthorizedHandler } from '../../shared/api/api-client';
+import { notifyError } from '../../shared/notifications/notifications';
 import i18n from '../../app/i18n';
 import { AuthContext } from './auth-context-value';
-import { cachePolicy } from '../../lib/cache-policy';
-import { queryKeys } from '../../lib/query-keys';
+import { cachePolicy } from '../../shared/query/cache-policy';
+import { queryKeys } from '../../shared/query/query-keys';
 
 const profileKey = queryKeys.auth.profile;
 

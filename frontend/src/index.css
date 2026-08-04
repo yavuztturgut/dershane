@@ -16,8 +16,15 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 20rem;
+  background: var(--mantine-color-gray-0);
 }
+
+[data-mantine-color-scheme='dark'] body { background: var(--mantine-color-dark-8); }
+
+::selection { background: var(--mantine-color-blue-light); }
+
+:focus-visible { outline-offset: .2rem; }
 
 button, input, select, textarea {
   font: inherit;
@@ -32,6 +39,13 @@ button, input, select, textarea {
   --fc-event-bg-color: var(--mantine-color-blue-6);
   --fc-event-border-color: var(--mantine-color-blue-6);
 }
+
+.fc .fc-scrollgrid { border-radius: var(--mantine-radius-md); overflow: hidden; }
+.fc .fc-col-header-cell { background: var(--mantine-color-gray-0); }
+.fc .fc-day-today { background: color-mix(in srgb, var(--mantine-color-blue-1) 28%, transparent) !important; }
+[data-mantine-color-scheme='dark'] .fc { --fc-border-color: var(--mantine-color-dark-4); }
+[data-mantine-color-scheme='dark'] .fc .fc-col-header-cell { background: var(--mantine-color-dark-7); }
+[data-mantine-color-scheme='dark'] .fc .fc-day-today { background: color-mix(in srgb, var(--mantine-color-blue-8) 22%, transparent) !important; }
 
 .login-orb {
   will-change: transform;

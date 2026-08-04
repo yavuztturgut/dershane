@@ -10,15 +10,15 @@
 
 ## Folder Rules
 
-- Keep each domain inside `components/<feature>`: `auth`, `users`, `roles`, `classes`, `courses`, `schedules`, `attendance` and `dashboard`.
+- Keep each domain inside `backend/src/modules/<feature>`: `auth`, `users`, `roles`, `classes`, `courses`, `schedules`, `attendance`, `lookups` and `dashboard`.
 - Follow the dependency flow `route -> controller -> service -> repository`. Do not access PostgreSQL from routes or controllers.
 - Routes define endpoint paths and middleware order. Controllers translate HTTP input and service output without owning business rules.
 - Services own validation, authorization-sensitive domain rules and response shaping. Repositories own SQL and database transactions.
-- Keep cross-cutting HTTP middleware in `middlewares/`, shared utilities in `utils/`, and database setup and migrations in `db/`.
+- Keep cross-cutting HTTP middleware in `backend/src/http/middleware`, database code in `backend/src/infrastructure/database`, and cross-domain code in the named `backend/src/shared/{errors,time,security}` areas.
 
 ## Application and Errors
 
-- `server.js` loads environment variables and starts the HTTP server. `app.js` configures CORS, cookies, JSON parsing, `/api` routers and the final error middleware.
+- `backend/src/server.js` loads `backend/.env` and starts the HTTP server. `backend/src/app.js` configures CORS, cookies, JSON parsing, `/api` routers and the final error middleware.
 - Allow credentials only from `CLIENT_URL`, defaulting to `http://localhost:5173` in development.
 - Wrap asynchronous controllers with `asyncHandler`; forward failures to the centralized error middleware.
 - Create expected failures with `createHttpError`. API error responses use `{ error, errorCode }` and may include `details` for structured context.
@@ -45,14 +45,15 @@
 
 ## Database
 
-- Use the shared pool from `db/pool.js`. Keep SQL parameterized and return only fields required by the service or API.
+- Use the shared pool from `backend/src/infrastructure/database/pool.js`. Keep SQL parameterized and return only fields required by the service or API.
 - Use explicit transactions for multi-row or multi-step atomic operations, including attendance upserts and password-reset token consumption.
-- Use `db/create.sql` for a fresh database. Apply later changes with `npm run migrate`; migration files run in filename order and are recorded in `schema_migrations`.
+- Use `backend/src/infrastructure/database/create.sql` for a fresh database. Apply later changes with `npm run migrate`; migration files run in filename order and are recorded in `schema_migrations`.
 - Preserve database constraints for normalized class and course names, schedule time ordering, foreign-key integrity, attendance status values and one attendance record per student per schedule.
 
 ## Tests
 
-- Run backend tests with `npm test` using Node's built-in test runner.
+- Run colocated backend unit tests from the workspace root with `npm run test:unit` using Node's built-in test runner.
+- Run PostgreSQL integration tests with `TEST_DATABASE_URL=... npm run test:integration`; they use isolated temporary schemas and clean them after each run.
 - Test service validation and role or ownership boundaries without moving business rules into controllers.
 - Cover user pagination and student-class requirements, unsupported auth roles, reset-token behavior, reset-email localization and escaping, and rate limiting.
 - Cover schedule conflicts and adjacency, attendance ownership and lock windows, admin overrides, filtering, pagination and daily report grouping.

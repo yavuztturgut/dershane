@@ -1,0 +1,56 @@
+.days {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.day,
+.lesson {
+  position: relative;
+  overflow: hidden;
+  border: thin solid var(--mantine-color-default-border);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-body);
+}
+
+.lesson[data-active]::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: .1875rem;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
+  background: var(--mantine-primary-color-filled);
+  content: '';
+  pointer-events: none;
+}
+
+.day[data-active]::before {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: .1875rem;
+  border-radius: var(--mantine-radius-md) var(--mantine-radius-md) 0 0;
+  background: var(--mantine-color-green-5);
+  content: '';
+  pointer-events: none;
+}
+
+.lesson + .lesson {
+  margin-top: 0.5rem;
+}
+
+.lessonHeader {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1fr) minmax(18rem, auto);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+@media (max-width: 48rem) {
+  .lessonHeader {
+    grid-template-columns: 1fr;
+  }
+}

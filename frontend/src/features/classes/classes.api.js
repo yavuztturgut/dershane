@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '../../shared/api/api-client';
 
 export const classesApi = {
   getAll: async () => (await apiClient.get('/classes')).data,

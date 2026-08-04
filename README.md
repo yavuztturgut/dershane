@@ -75,32 +75,26 @@ Proje, React tabanlı responsive bir web arayüzü ile Node.js ve Express üzeri
 
 ```text
 .
-├── app.js                       # Express uygulaması ve API router kayıtları
-├── server.js                    # Backend başlangıç noktası
-├── components/                 # Backend feature modülleri
-│   ├── auth/
-│   ├── attendance/
-│   ├── classes/
-│   ├── courses/
-│   ├── dashboard/
-│   ├── roles/
-│   ├── schedules/
-│   └── users/
-├── db/
-│   ├── create.sql              # Yeni veritabanı şeması
-│   ├── migrate.js              # Migration çalıştırıcısı
-│   ├── migrations/             # Sıralı SQL migration dosyaları
-│   └── pool.js                 # PostgreSQL bağlantı havuzu
-├── middlewares/                # Auth, rol, async ve hata middleware'leri
-├── utils/                      # Ortak backend yardımcıları
-├── test/                       # Backend testleri
+├── package.json                # npm workspace komutları
+├── backend/
+│   ├── package.json
+│   ├── .env.example
+│   ├── src/
+│   │   ├── app.js
+│   │   ├── server.js
+│   │   ├── modules/<feature>/  # Route, controller, service, repository ve unit test
+│   │   ├── infrastructure/database/
+│   │   ├── http/middleware/
+│   │   └── shared/{errors,time,security}/
+│   └── tests/integration/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/                # Provider, router, guard ve i18n kurulumu
-│   │   ├── components/         # Ortak UI ve layout bileşenleri
-│   │   ├── features/           # Ekranlar, API istemcileri ve feature kodları
-│   │   ├── lib/                # Axios, React Query ve bildirim yardımcıları
+│   │   ├── components/         # Klasörlenmiş ortak UI ve layout bileşenleri
+│   │   ├── features/           # Ekranlar, domain bileşenleri ve API istemcileri
+│   │   ├── shared/             # API, query, time ve notification altyapısı
 │   │   └── locales/            # Türkçe ve İngilizce çeviriler
+│   ├── tests/architecture/
 │   └── package.json
 └── docs/                       # Frontend ve backend mimari kuralları
 ```
@@ -128,23 +122,15 @@ Projede Docker yapılandırması veya otomatik veritabanı seed komutu bulunmad�
 
 ### 1. Projeyi hazırlayın
 
-Backend bağımlılıklarını proje kökünde yükleyin:
+Tüm workspace bağımlılıklarını proje kökünde yükleyin:
 
 ```bash
 npm install
-```
-
-Frontend bağımlılıklarını yükleyin:
-
-```bash
-cd frontend
-npm install
-cd ..
 ```
 
 ### 2. Backend ortam değişkenlerini ayarlayın
 
-Proje kökündeki `.env.example` dosyasını `.env` adıyla kopyalayın ve değerleri doldurun:
+`backend/.env.example` dosyasını `backend/.env` adıyla kopyalayın ve değerleri doldurun:
 
 ```env
 PORT=3000
@@ -188,10 +174,10 @@ VITE_API_URL=http://localhost:3000/api
 
 ### 4. Veritabanını hazırlayın
 
-Yeni bir kurulumda önce PostgreSQL veritabanını oluşturun, ardından `db/create.sql` dosyasını çalıştırın. Örneğin `psql` ile:
+Yeni bir kurulumda önce PostgreSQL veritabanını oluşturun, ardından `backend/src/infrastructure/database/create.sql` dosyasını çalıştırın. Örneğin `psql` ile:
 
 ```bash
-psql -d dershane -f db/create.sql
+psql -d dershane -f backend/src/infrastructure/database/create.sql
 ```
 
 Uygulamanın kullandığı sabit sistem rollerini ekleyin:

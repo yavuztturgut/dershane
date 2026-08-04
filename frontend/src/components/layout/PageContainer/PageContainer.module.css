@@ -1,0 +1,9 @@
+.default,
+.wide {
+  width: min(100%, 90rem);
+  margin-inline: auto;
+}
+
+.wide {
+  width: min(100%, 112rem);
+}

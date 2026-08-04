@@ -1,4 +1,4 @@
-import { apiClient } from '../../lib/api-client';
+import { apiClient } from '../../shared/api/api-client';
 
 export const schedulesApi = {
   getAll: async (params) => (await apiClient.get('/schedules', { params })).data,
