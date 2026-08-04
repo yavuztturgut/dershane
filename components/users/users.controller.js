@@ -5,6 +5,10 @@ async function getUsers(req, res) {
     res.json(users);
 }
 
+async function getUserOptions(req, res) {
+    res.json(await usersService.getUserOptions(req.query));
+}
+
 async function createUser(req, res) {
     const user = await usersService.createUser(req.body);
     res.status(201).json(user);
@@ -34,6 +38,7 @@ async function deleteUser(req, res) {
 
 module.exports = {
     getUsers,
+    getUserOptions,
     createUser,
     getUserById,
     updateUser,

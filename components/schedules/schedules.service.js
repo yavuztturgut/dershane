@@ -45,13 +45,14 @@ async function createSchedule(data) {
 
     await validateSchedule({ course_id, class_id, teacher_id, start_time, end_time });
 
-    return schedulesRepository.insertSchedule({
+    const created = await schedulesRepository.insertSchedule({
         course_id,
         class_id,
         teacher_id,
         start_time,
         end_time
     });
+    return schedulesRepository.findScheduleByIdForUser(created.id, { role_name: 'admin' });
 }
 
 async function updateSchedule(id, data) {
@@ -70,7 +71,8 @@ async function updateSchedule(id, data) {
     };
     await validateSchedule(finalData, id);
 
-    return schedulesRepository.updateScheduleById(id, data);
+    await schedulesRepository.updateScheduleById(id, data);
+    return schedulesRepository.findScheduleByIdForUser(id, { role_name: 'admin' });
 }
 
 async function deleteSchedule(id) {

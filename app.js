@@ -9,6 +9,7 @@ const authRoutes = require('./components/auth/auth.route');
 const scheduleRoutes = require('./components/schedules/schedules.route');
 const dashboardRoutes = require('./components/dashboard/dashboard.route');
 const attendanceRoutes = require('./components/attendance/attendance.route');
+const lookupRoutes = require('./components/lookups/lookups.route');
 const errorMiddleware = require('./middlewares/error-middleware');
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/classes", classRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/lookups', lookupRoutes);
 
 app.use(errorMiddleware);
 

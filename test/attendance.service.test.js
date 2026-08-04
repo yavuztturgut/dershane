@@ -15,10 +15,15 @@ test('teacher attendance locks 24 hours after lesson end', async () => {
 
 test('admin can save valid attendance after the teacher lock', async () => {
     repository.findSchedule = async () => ({ id: 1, teacher_id: 7, start_time: new Date(Date.now() - 49 * 60 * 60 * 1000), end_time: new Date(Date.now() - 25 * 60 * 60 * 1000) });
-    repository.findScheduleAttendance = async () => [{ student_id: 2, student_name: 'Student' }];
+    const receivedFilters = [];
+    repository.findScheduleAttendance = async (_scheduleId, studentId) => {
+        receivedFilters.push(studentId);
+        return [{ student_id: 2, student_name: 'Student' }];
+    };
     repository.upsertAttendance = async () => undefined;
-    const result = await service.saveScheduleAttendance(1, [{ student_id: 2, status: 'excused' }], { id: 1, role_name: 'admin' });
+    const result = await service.saveScheduleAttendance(1, [{ student_id: 2, status: 'excused' }], { id: 1, role_name: 'admin' }, { student_id: '2' });
     assert.equal(result.records[0].student_id, 2);
+    assert.deepEqual(receivedFilters, [undefined, 2]);
 });
 
 test('admin daily report defaults to seven calendar days and groups lessons without splitting a day', async () => {

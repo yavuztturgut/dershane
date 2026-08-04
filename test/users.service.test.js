@@ -27,3 +27,17 @@ test('new user passwords require at least eight characters', async () => {
         (error) => error.errorCode === 'PASSWORD_TOO_SHORT'
     );
 });
+
+test('user options only allow supported roles and normalize class filters', async () => {
+    let received;
+    repository.findUserOptions = async (filters) => { received = filters; return [{ id: 1, name: 'Ada', class_id: 4 }]; };
+
+    const result = await service.getUserOptions({ role: ' STUDENT ', class_id: '4' });
+
+    assert.deepEqual(received, { role: 'student', classId: 4 });
+    assert.equal(result.length, 1);
+    await assert.rejects(
+        service.getUserOptions({ role: 'admin' }),
+        (error) => error.errorCode === 'INVALID_USER_OPTION_ROLE'
+    );
+});

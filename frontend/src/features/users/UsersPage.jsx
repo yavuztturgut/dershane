@@ -15,8 +15,8 @@ import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
-import { rolesApi } from '../roles/roles.api';
-import { classesApi } from '../classes/classes.api';
+import { queryKeys } from '../../lib/query-keys';
+import { useLookups } from '../lookups/use-lookups';
 import { usersApi } from './users.api';
 
 const initialValues = { role_id: '', class_id: '', name: '', email: '', password: '', is_active: true };
@@ -29,16 +29,17 @@ export function UsersPage() {
   const [debouncedSearch] = useDebouncedValue(searchInput, 300);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: rolesApi.getAll });
-  const classesQuery = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll });
+  const lookupsQuery = useLookups();
+  const roles = lookupsQuery.data?.roles;
+  const classes = lookupsQuery.data?.classes;
   const queryParams = Object.fromEntries(searchParams.entries());
-  const usersQuery = useQuery({ queryKey: ['users', queryParams], queryFn: () => usersApi.getPage(queryParams) });
-  const detailQuery = useQuery({ queryKey: ['users', editingId], queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId) });
+  const usersQuery = useQuery({ queryKey: queryKeys.users.list(queryParams), queryFn: () => usersApi.getPage(queryParams) });
+  const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId) });
   const form = useForm({
     initialValues,
     validate: {
       role_id: (value) => value ? null : t('errors.REQUIRED'),
-      class_id: (value, values) => rolesQuery.data?.find((role) => String(role.id) === values.role_id)?.name === 'student' && !value ? t('errors.STUDENT_CLASS_REQUIRED') : null,
+      class_id: (value, values) => roles?.find((role) => String(role.id) === values.role_id)?.name === 'student' && !value ? t('errors.STUDENT_CLASS_REQUIRED') : null,
       name: (value) => value.trim() ? null : t('errors.REQUIRED'),
       email: (value) => /^\S+@\S+\.\S+$/.test(value) ? null : t('errors.INVALID_EMAIL'),
       password: (value) => editingId && !value ? null : value.length >= 8 ? null : t('errors.PASSWORD_TOO_SHORT'),
@@ -60,23 +61,38 @@ export function UsersPage() {
       const payload = { ...values, role_id: Number(values.role_id), class_id: values.class_id ? Number(values.class_id) : null };
       return editingId ? usersApi.update(editingId, payload) : usersApi.create(payload);
     },
-    onSuccess: () => { notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') }); setOpened(false); queryClient.invalidateQueries({ queryKey: ['users'] }); },
+    onSuccess: (user) => {
+      notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
+      if (editingId) queryClient.setQueryData(queryKeys.users.detail(editingId), user);
+      setOpened(false);
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.lookups.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+    },
     onError: (error) => notifyError(getErrorMessage(error)),
   });
-  const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: () => { notifications.show({ color: 'green', message: t('deleted') }); queryClient.invalidateQueries({ queryKey: ['users'] }); }, onError: (error) => notifyError(getErrorMessage(error)) });
+  const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: (_, id) => {
+    notifications.show({ color: 'green', message: t('deleted') });
+    queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.lookups.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+  }, onError: (error) => notifyError(getErrorMessage(error)) });
 
-  const roleName = (id) => rolesQuery.data?.find((role) => role.id === id)?.name || id;
-  const className = (id) => classesQuery.data?.find((item) => item.id === id)?.name || '-';
-  const roleOptions = rolesQuery.data?.map((role) => ({ value: String(role.id), label: role.name })) || [];
-  const classOptions = classesQuery.data?.map((item) => ({ value: String(item.id), label: item.name })) || [];
+  const roleName = (id) => roles?.find((role) => role.id === id)?.name || id;
+  const className = (id) => classes?.find((item) => item.id === id)?.name || '-';
+  const roleOptions = roles?.map((role) => ({ value: String(role.id), label: role.name })) || [];
+  const classOptions = classes?.map((item) => ({ value: String(item.id), label: item.name })) || [];
   const setFilter = (key, value) => setSearchParams((current) => { const next = new URLSearchParams(current); if (value) next.set(key, value); else next.delete(key); if (key !== 'page') next.set('page', '1'); return next; });
 
   function openCreate() { setEditingId(null); form.setValues(initialValues); setOpened(true); }
   function openEdit(id) { setEditingId(id); setOpened(true); }
   function confirmDelete(user) { openAppConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) }); }
 
-  if (usersQuery.isLoading || rolesQuery.isLoading || classesQuery.isLoading) return <PageLoader />;
-  if (usersQuery.isError || rolesQuery.isError || classesQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
+  if (usersQuery.isLoading || lookupsQuery.isLoading) return <PageLoader />;
+  if (usersQuery.isError || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
   const pageData = usersQuery.data;
 
   return <><PageHeader title={t('users')} onCreate={openCreate} createLabel={t('create')} />

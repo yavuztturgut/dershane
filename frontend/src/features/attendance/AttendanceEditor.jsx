@@ -8,6 +8,7 @@ import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
 import { attendanceApi } from './attendance.api';
+import { queryKeys } from '../../lib/query-keys';
 
 function valuesFromRecords(records) {
   return Object.fromEntries(records.map((record) => [record.student_id, record.status || 'absent']));
@@ -28,7 +29,7 @@ const statusStyles = {
 export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleId, studentId, onDirtyChange, onSavingChange, onCanSaveChange, onSaved, inlineSave = false }, ref) {
   const { t } = useTranslation();
   const query = useQuery({
-    queryKey: ['attendance', scheduleId, studentId || 'all'],
+    queryKey: queryKeys.attendance.schedule(scheduleId, studentId),
     queryFn: () => attendanceApi.getForSchedule(scheduleId, { student_id: studentId || undefined }),
     enabled: Boolean(scheduleId),
   });
@@ -47,12 +48,17 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
   const isDirty = useMemo(() => !valuesMatch(values, baselineRef.current), [values]);
   useEffect(() => { callbacksRef.current.onDirtyChange?.(isDirty); }, [isDirty]);
   const mutation = useMutation({
-    mutationFn: () => attendanceApi.saveForSchedule(scheduleId, Object.entries(values).map(([student_id, status]) => ({ student_id: Number(student_id), status }))),
+    mutationFn: () => attendanceApi.saveForSchedule(
+      scheduleId,
+      Object.entries(values).map(([student_id, status]) => ({ student_id: Number(student_id), status })),
+      { student_id: studentId || undefined },
+    ),
     onSuccess: (result) => {
       baselineRef.current = { ...values };
       onDirtyChange?.(false);
       notifications.show({ color: 'green', message: t('attendanceSaved') });
-      queryClient.invalidateQueries({ queryKey: ['attendance', scheduleId] });
+      queryClient.setQueryData(queryKeys.attendance.schedule(scheduleId, studentId), result);
+      queryClient.invalidateQueries({ queryKey: queryKeys.attendance.reports() });
       onSaved?.(result);
     },
     onError: (error) => notifyError(getErrorMessage(error)),

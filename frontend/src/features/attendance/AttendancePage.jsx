@@ -7,8 +7,9 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { PageLoader } from '../../components/ui/PageLoader';
 import { useAuth } from '../auth/use-auth';
-import { classesApi } from '../classes/classes.api';
 import { usersApi } from '../users/users.api';
+import { useLookups } from '../lookups/use-lookups';
+import { queryKeys } from '../../lib/query-keys';
 import { AttendanceEditor } from './AttendanceEditor';
 import { attendanceApi } from './attendance.api';
 import styles from './AttendancePage.module.css';
@@ -61,12 +62,17 @@ export function AttendancePage() {
     pageSize: isAdmin ? 7 : undefined,
   }), [filters, isAdmin, page]);
   const query = useQuery({
-    queryKey: ['attendance', isAdmin ? 'daily-report' : 'me', params],
+    queryKey: isAdmin ? queryKeys.attendance.dailyReport(params) : queryKeys.attendance.mine(params),
     queryFn: () => isAdmin ? attendanceApi.getDailyReport(params) : attendanceApi.getMine(params),
     enabled: ['admin', 'student'].includes(user.role_name),
   });
-  const classesQuery = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll, enabled: isAdmin });
-  const usersQuery = useQuery({ queryKey: ['users', 'attendance-options'], queryFn: usersApi.getAll, enabled: isAdmin });
+  const lookupsQuery = useLookups(isAdmin);
+  const studentOptionsParams = { role: 'student' };
+  const usersQuery = useQuery({
+    queryKey: queryKeys.users.options(studentOptionsParams),
+    queryFn: () => usersApi.getOptions(studentOptionsParams),
+    enabled: isAdmin,
+  });
   const viewKey = JSON.stringify(params);
 
   useEffect(() => {
@@ -130,14 +136,14 @@ export function AttendancePage() {
 
   return <div><Title order={1} className="text-2xl" mb="lg">{t('attendance')}</Title>
     {!isAdmin ? <PersonalAttendance query={query} filters={filters} changeFilter={changeFilter} t={t} /> : <>
-      {(classesQuery.isError || usersQuery.isError) && <Alert color="red" mb="md">{t('errors.GENERIC')}</Alert>}
+      {(lookupsQuery.isError || usersQuery.isError) && <Alert color="red" mb="md">{t('errors.GENERIC')}</Alert>}
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">
-        <Select clearable placeholder={t('class')} data={(classesQuery.data || []).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.class_id} onChange={(value) => changeFilter('class_id', value || '')} />
-        <Select searchable clearable placeholder={t('student')} data={(usersQuery.data || []).filter((item) => item.class_id).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.student_id} onChange={(value) => changeFilter('student_id', value || '')} />
+        <Select clearable placeholder={t('class')} data={(lookupsQuery.data?.classes || []).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.class_id} onChange={(value) => changeFilter('class_id', value || '')} />
+        <Select searchable clearable placeholder={t('student')} data={(usersQuery.data || []).filter((item) => !filters.class_id || String(item.class_id) === filters.class_id).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.student_id} onChange={(value) => changeFilter('student_id', value || '')} />
         <DateInput clearable placeholder={t('start')} value={filters.start} onChange={(start) => changeFilter('start', start)} />
         <DateInput clearable placeholder={t('end')} value={filters.end} onChange={(end) => changeFilter('end', end)} />
       </SimpleGrid>
-      {(query.isLoading || classesQuery.isLoading || usersQuery.isLoading) ? <PageLoader /> : query.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
+      {(query.isLoading || lookupsQuery.isLoading || usersQuery.isLoading) ? <PageLoader /> : query.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
         <Accordion multiple value={openDays} onChange={changeDays} className={styles.days}>
           {query.data.days.map((day) => <Accordion.Item value={day.date} key={day.date} className={styles.day}>
             <Accordion.Control><Group justify="space-between" wrap="wrap" gap="xs" pr="sm"><Text fw={700}>{formatDay(day.date)}</Text><Group gap="xs"><Badge variant="light">{t('lessonCount', { count: day.lesson_count })}</Badge><Badge color={day.attendance_taken_count === day.lesson_count ? 'green' : 'gray'} variant="light">{t('attendanceProgress', { taken: day.attendance_taken_count, total: day.lesson_count })}</Badge></Group></Group></Accordion.Control>
@@ -154,7 +160,6 @@ export function AttendancePage() {
                     studentId={filters.student_id || undefined}
                     inlineSave
                     onDirtyChange={(dirty) => setDirtyLessons((current) => current[lessonId] === dirty ? current : ({ ...current, [lessonId]: dirty }))}
-                    onSaved={() => query.refetch()}
                   />}</Accordion.Panel>
                 </Accordion.Item>;
               })}

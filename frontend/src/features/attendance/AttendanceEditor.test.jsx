@@ -77,7 +77,7 @@ describe('AttendanceEditor quick marking', () => {
     await waitFor(() => expect(saveForSchedule).toHaveBeenCalledWith(9, [
       { student_id: 1, status: 'present' },
       { student_id: 2, status: 'present' },
-    ]));
+    ], { student_id: undefined }));
 
     fireEvent.click(bulkCheckbox);
     expect(screen.getAllByRole('combobox').map((select) => select.value)).toEqual(['Absent', 'Absent']);
@@ -112,6 +112,9 @@ describe('AttendanceEditor quick marking', () => {
 
   it('loads only the selected student and reports a successful inline save', async () => {
     const onSaved = vi.fn();
+    getForSchedule.mockImplementation(async (scheduleId, params) => ({
+      records: params.student_id ? records.filter((record) => String(record.student_id) === String(params.student_id)) : records,
+    }));
     renderEditor({ studentId: '2', inlineSave: true, onSaved });
 
     await screen.findByRole('button', { name: 'Save attendance' });
@@ -119,5 +122,6 @@ describe('AttendanceEditor quick marking', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Save attendance' }));
 
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(saveForSchedule).toHaveBeenCalledWith(9, [{ student_id: 2, status: 'absent' }], { student_id: '2' });
   });
 });

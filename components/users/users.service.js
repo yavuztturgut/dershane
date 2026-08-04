@@ -1,6 +1,9 @@
 const bcrypt = require('bcrypt');
 const usersRepository = require('./users.repository');
 const createHttpError = require('../../utils/create-http-error');
+const authStateCache = require('../auth/auth-state-cache');
+
+const optionRoles = new Set(['student', 'teacher']);
 
 async function getUsers(query = {}) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -17,6 +20,23 @@ async function getUsers(query = {}) {
     };
     const { items, total } = await usersRepository.findAllUsers(filters);
     return { items, page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
+}
+
+async function getUserOptions(query = {}) {
+    const role = String(query.role || '').trim().toLowerCase();
+    if (!optionRoles.has(role)) {
+        throw createHttpError('role must be student or teacher', 400, 'INVALID_USER_OPTION_ROLE');
+    }
+
+    let classId;
+    if (query.class_id !== undefined && query.class_id !== '') {
+        classId = Number(query.class_id);
+        if (!Number.isInteger(classId) || classId <= 0) {
+            throw createHttpError('class_id is invalid', 400, 'INVALID_CLASS');
+        }
+    }
+
+    return usersRepository.findUserOptions({ role, classId });
 }
 
 async function validateUserData(data, isCreate = false) {
@@ -69,6 +89,7 @@ async function updateUser(id, data) {
     }
 
     let hashedPassword = existingUser.password;
+    const passwordChanged = Boolean(data.password);
 
     if (data.password) {
         hashedPassword = await bcrypt.hash(data.password, 10);
@@ -76,14 +97,17 @@ async function updateUser(id, data) {
 
     const classId = data.class_id === undefined ? existingUser.class_id : data.class_id;
 
-    return usersRepository.updateUserById(id, {
+    const user = await usersRepository.updateUserById(id, {
         role_id: data.role_id,
         class_id: classId,
         name: data.name,
         email: data.email,
         password: hashedPassword,
-        is_active: data.is_active
+        is_active: data.is_active,
+        passwordChanged
     });
+    authStateCache.invalidate(id);
+    return user;
 }
 
 async function deleteUser(id) {
@@ -93,11 +117,13 @@ async function deleteUser(id) {
         throw createHttpError('User not found', 404);
     }
 
+    authStateCache.invalidate(id);
     return user;
 }
 
 module.exports = {
     getUsers,
+    getUserOptions,
     getUserById,
     createUser,
     updateUser,

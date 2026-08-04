@@ -8,31 +8,42 @@ import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
+import { queryKeys } from '../../lib/query-keys';
+import { useLookups } from '../../features/lookups/use-lookups';
 import { PageHeader } from './PageHeader';
 import { PageLoader } from './PageLoader';
 import { EmptyState } from './EmptyState';
 import { AppModal } from './AppModal';
 import { openAppConfirmModal } from './app-confirm-modal';
 
-export function NamedEntityPage({ api, queryKey, titleKey, readOnly = false }) {
+export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const { t } = useTranslation();
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const saveRequestRef = useRef(false);
   const form = useForm({ initialValues: { name: '' }, validate: { name: (value) => value.trim() ? null : t('errors.REQUIRED') } });
   const setFormValues = form.setValues;
-  const listQuery = useQuery({ queryKey: [queryKey], queryFn: api.getAll });
-  const detailQuery = useQuery({ queryKey: [queryKey, editingId], queryFn: () => api.getById(editingId), enabled: Boolean(editingId) });
+  const lookupsQuery = useLookups();
+  const items = lookupsQuery.data?.[entity];
+  const detailQuery = useQuery({ queryKey: queryKeys.entities.detail(entity, editingId), queryFn: () => api.getById(editingId), enabled: Boolean(editingId) });
 
   useEffect(() => {
     if (detailQuery.data) setFormValues({ name: detailQuery.data.name });
   }, [detailQuery.data, setFormValues]);
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: [queryKey] });
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.lookups.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+    if (entity === 'classes' || entity === 'courses') {
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.attendance.reports() });
+    }
+  };
   const saveMutation = useMutation({
     mutationFn: (values) => editingId ? api.update(editingId, values) : api.create(values),
-    onSuccess: () => {
+    onSuccess: (result) => {
       notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
+      if (editingId) queryClient.setQueryData(queryKeys.entities.detail(entity, editingId), result);
       setOpened(false);
       invalidate();
     },
@@ -41,7 +52,11 @@ export function NamedEntityPage({ api, queryKey, titleKey, readOnly = false }) {
   });
   const deleteMutation = useMutation({
     mutationFn: api.remove,
-    onSuccess: () => { notifications.show({ color: 'green', message: t('deleted') }); invalidate(); },
+    onSuccess: (_, id) => {
+      notifications.show({ color: 'green', message: t('deleted') });
+      queryClient.removeQueries({ queryKey: queryKeys.entities.detail(entity, id) });
+      invalidate();
+    },
     onError: (error) => notifyError(getErrorMessage(error)),
   });
 
@@ -72,17 +87,17 @@ export function NamedEntityPage({ api, queryKey, titleKey, readOnly = false }) {
     });
   }
 
-  if (listQuery.isLoading) return <PageLoader />;
-  if (listQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => listQuery.refetch()}>{t('retry')}</Button></Alert>;
+  if (lookupsQuery.isLoading) return <PageLoader />;
+  if (lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => lookupsQuery.refetch()}>{t('retry')}</Button></Alert>;
 
   return (
     <>
       <PageHeader title={t(titleKey)} onCreate={readOnly ? undefined : openCreate} createLabel={t('create')} />
-      {!listQuery.data?.length ? <EmptyState message={t('noData')} /> : (
+      {!items?.length ? <EmptyState message={t('noData')} /> : (
         <Table.ScrollContainer minWidth={480}>
           <Table highlightOnHover withTableBorder>
             <Table.Thead><Table.Tr><Table.Th>{t('name')}</Table.Th><Table.Th className="w-28">{t('actions')}</Table.Th></Table.Tr></Table.Thead>
-            <Table.Tbody>{listQuery.data.map((item) => (
+            <Table.Tbody>{items.map((item) => (
               <Table.Tr key={item.id}>
                 <Table.Td>{item.name}</Table.Td>
                 <Table.Td>{readOnly ? t('systemRole') : <Group gap="xs"><ActionIcon variant="subtle" onClick={() => openEdit(item.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>}</Table.Td>

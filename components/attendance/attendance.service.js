@@ -20,7 +20,7 @@ async function getScheduleAttendance(scheduleId, user, filters = {}) {
     return { schedule, records: await attendanceRepository.findScheduleAttendance(scheduleId, studentId) };
 }
 
-async function saveScheduleAttendance(scheduleId, records, user) {
+async function saveScheduleAttendance(scheduleId, records, user, filters = {}) {
     const schedule = await attendanceRepository.findSchedule(scheduleId);
     if (!schedule) throw createHttpError('Schedule not found', 404, 'SCHEDULE_NOT_FOUND');
     assertViewer(schedule, user);
@@ -44,7 +44,7 @@ async function saveScheduleAttendance(scheduleId, records, user) {
         records.map((record) => ({ ...record, student_id: Number(record.student_id) })),
         user.id
     );
-    return getScheduleAttendance(scheduleId, user);
+    return getScheduleAttendance(scheduleId, user, filters);
 }
 
 async function getMyAttendance(user, filters) {

@@ -25,10 +25,13 @@ const updateSchedule = vi.fn(async () => schedule);
 vi.mock('./schedules.api', () => ({
   schedulesApi: { getAll: vi.fn(async () => [schedule]), getById: vi.fn(async () => schedule), create: vi.fn(), update: (...args) => updateSchedule(...args), remove: vi.fn() },
 }));
-vi.mock('../courses/courses.api', () => ({ coursesApi: { getAll: vi.fn(async () => [{ id: 1, name: 'Turkish' }]) } }));
-vi.mock('../classes/classes.api', () => ({ classesApi: { getAll: vi.fn(async () => [{ id: 1, name: 'Verbal' }]) } }));
-vi.mock('../roles/roles.api', () => ({ rolesApi: { getAll: vi.fn(async () => [{ id: 2, name: 'teacher' }]) } }));
-vi.mock('../users/users.api', () => ({ usersApi: { getAll: vi.fn(async () => [{ id: 2, role_id: 2, name: 'Teacher', is_active: true }]) } }));
+const getLookups = vi.fn(async () => ({
+  roles: [{ id: 2, name: 'teacher' }],
+  classes: [{ id: 1, name: 'Verbal' }],
+  courses: [{ id: 1, name: 'Turkish' }],
+  teachers: [{ id: 2, name: 'Teacher' }],
+}));
+vi.mock('../lookups/lookups.api', () => ({ lookupsApi: { getAll: (...args) => getLookups(...args) } }));
 
 const getAttendance = vi.fn(async () => ({
   records: [{ student_id: 7, student_name: 'Student One', email: 'student@example.com', status: 'present' }],
@@ -75,6 +78,7 @@ describe('SchedulesPage lesson modal', () => {
     getAttendance.mockClear();
     saveAttendance.mockClear();
     updateSchedule.mockClear();
+    getLookups.mockClear();
   });
 
   it('keeps genuine overlaps side by side without forcing short adjacent lessons to collide', async () => {
@@ -82,6 +86,12 @@ describe('SchedulesPage lesson modal', () => {
     const calendar = await screen.findByRole('button', { name: 'Open lesson' });
     expect(calendar).toHaveAttribute('data-slot-event-overlap', 'false');
     expect(calendar).toHaveAttribute('data-event-min-height', '24');
+  });
+
+  it('loads all admin reference data with one lookup request', async () => {
+    renderPage();
+    await screen.findByRole('button', { name: 'Open lesson' });
+    expect(getLookups).toHaveBeenCalledTimes(1);
   });
 
   it('opens admin details and attendance in one dual panel, then enters edit mode', async () => {

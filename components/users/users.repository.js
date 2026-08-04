@@ -39,6 +39,27 @@ async function findRoleNameById(id) {
     return result.rows[0]?.name;
 }
 
+async function findUserOptions({ role, classId }) {
+    const params = [role];
+    let classFilter = '';
+
+    if (classId !== undefined) {
+        params.push(classId);
+        classFilter = 'AND u.class_id = $2';
+    }
+
+    const result = await pool.query(
+        `SELECT u.id, u.name, u.class_id
+         FROM users u
+         JOIN roles r ON r.id = u.role_id
+         WHERE r.name = $1 AND u.is_active = true ${classFilter}
+         ORDER BY u.name ASC, u.id ASC`,
+        params
+    );
+
+    return result.rows;
+}
+
 async function findUserById(id) {
     const result = await pool.query(
         `
@@ -106,8 +127,9 @@ async function updateUserById(id, data) {
               email = COALESCE($4, email),
               password = COALESCE($5, password),
               is_active = COALESCE($6, is_active),
+              token_version = token_version + CASE WHEN $7 THEN 1 ELSE 0 END,
               updated_at = NOW()
-          WHERE id = $7
+          WHERE id = $8
           RETURNING
               id,
               role_id,
@@ -125,6 +147,7 @@ async function updateUserById(id, data) {
             data.email,
             data.password,
             data.is_active,
+            data.passwordChanged,
             id
         ]
     );
@@ -155,6 +178,7 @@ async function deleteUserById(id) {
 
 module.exports = {
     findAllUsers,
+    findUserOptions,
     findUserById,
     findUserWithPasswordById,
     insertUser,

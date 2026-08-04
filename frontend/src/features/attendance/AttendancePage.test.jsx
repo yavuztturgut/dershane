@@ -10,8 +10,8 @@ import { resolve } from 'node:path';
 const attendanceCss = readFileSync(resolve(process.cwd(), 'src/features/attendance/AttendancePage.module.css'), 'utf8');
 
 vi.mock('../auth/use-auth', () => ({ useAuth: () => ({ user: { id: 1, role_name: 'admin' } }) }));
-vi.mock('../classes/classes.api', () => ({ classesApi: { getAll: vi.fn(async () => [{ id: 1, name: 'Class A' }]) } }));
-vi.mock('../users/users.api', () => ({ usersApi: { getAll: vi.fn(async () => [{ id: 5, name: 'Ada', class_id: 1 }]) } }));
+vi.mock('../lookups/lookups.api', () => ({ lookupsApi: { getAll: vi.fn(async () => ({ roles: [], classes: [{ id: 1, name: 'Class A' }], courses: [], teachers: [] })) } }));
+vi.mock('../users/users.api', () => ({ usersApi: { getOptions: vi.fn(async () => [{ id: 5, name: 'Ada', class_id: 1 }]) } }));
 
 const report = {
   days: [
@@ -96,7 +96,7 @@ describe('AttendancePage daily admin report', () => {
     await waitFor(() => expect(screen.queryByTestId('editor-11')).not.toBeInTheDocument());
   });
 
-  it('passes the selected student into the opened editor and refreshes after save', async () => {
+  it('passes the selected student into the opened editor without a duplicate report refresh after save', async () => {
     const user = userEvent.setup();
     renderPage();
     await screen.findByTestId('editor-11');
@@ -105,7 +105,8 @@ describe('AttendancePage daily admin report', () => {
 
     expect(await screen.findByText('Editor 11 student 5')).toBeInTheDocument();
     expect(getDailyReport).toHaveBeenLastCalledWith(expect.objectContaining({ student_id: '5', pageSize: 7 }));
+    const requestCountBeforeSave = getDailyReport.mock.calls.length;
     await user.click(screen.getByRole('button', { name: 'Save mock 11' }));
-    await waitFor(() => expect(getDailyReport.mock.calls.length).toBeGreaterThanOrEqual(3));
+    await waitFor(() => expect(getDailyReport).toHaveBeenCalledTimes(requestCountBeforeSave));
   });
 });

@@ -6,15 +6,17 @@ import { setUnauthorizedHandler } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import i18n from '../../app/i18n';
 import { AuthContext } from './auth-context-value';
+import { cachePolicy } from '../../lib/cache-policy';
+import { queryKeys } from '../../lib/query-keys';
 
-const profileKey = ['auth', 'profile'];
+const profileKey = queryKeys.auth.profile;
 
 export function AuthProvider({ children }) {
   const profileQuery = useQuery({
     queryKey: profileKey,
     queryFn: authApi.getProfile,
     retry: false,
-    staleTime: 5 * 60 * 1000,
+    staleTime: cachePolicy.profile,
   });
 
   useEffect(() => {

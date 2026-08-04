@@ -4,6 +4,7 @@ const authRepository = require('./auth.repository');
 const createHttpError = require('../../utils/create-http-error');
 const crypto = require('crypto');
 const emailService = require('./email.service');
+const authStateCache = require('./auth-state-cache');
 
 function validatePassword(password) {
     if (typeof password !== 'string' || password.length < 8) {
@@ -84,6 +85,15 @@ async function updateProfile(userId, data) {
     if (!name || !/^\S+@\S+\.\S+$/.test(email || '')) {
         throw createHttpError('Valid name and email are required', 400, 'INVALID_PROFILE');
     }
+
+    authStateCache.set(user.id, {
+        id: user.id,
+        role_id: user.role_id,
+        role_name: user.role_name,
+        class_id: user.class_id,
+        is_active: user.is_active,
+        token_version: user.token_version
+    });
     await authRepository.updateProfile(userId, { name, email });
     return getProfile(userId);
 }
@@ -95,6 +105,7 @@ async function changePassword(userId, data) {
         throw createHttpError('Current password is invalid', 400, 'INVALID_CURRENT_PASSWORD');
     }
     await authRepository.updatePassword(userId, await bcrypt.hash(data.new_password, 10));
+    authStateCache.invalidate(userId);
 }
 
 function getResetBaseUrl() {
@@ -125,6 +136,7 @@ async function resetPassword(data) {
     const resetToken = await authRepository.findValidPasswordResetToken(tokenHash);
     if (!resetToken) throw createHttpError('Reset token is invalid or expired', 400, 'RESET_TOKEN_INVALID');
     await authRepository.consumePasswordResetToken(resetToken.id, resetToken.user_id, await bcrypt.hash(data.new_password, 10));
+    authStateCache.invalidate(resetToken.user_id);
 }
 
 module.exports = {

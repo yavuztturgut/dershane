@@ -7,6 +7,7 @@ test('createSchedule accepts adjacent non-conflicting lessons', async () => {
     repository.isActiveTeacher = async () => true;
     repository.findConflict = async () => null;
     repository.insertSchedule = async (data) => ({ id: 1, ...data });
+    repository.findScheduleByIdForUser = async (id) => ({ id, course_name: 'Math' });
     const result = await service.createSchedule({ course_id: 1, class_id: 2, teacher_id: 3, start_time: '2026-08-03 09:00:00', end_time: '2026-08-03 10:00:00' });
     assert.equal(result.id, 1);
 });

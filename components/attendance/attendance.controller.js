@@ -5,7 +5,7 @@ async function getScheduleAttendance(req, res) {
 }
 
 async function saveScheduleAttendance(req, res) {
-    res.json(await attendanceService.saveScheduleAttendance(Number(req.params.id), req.body.records, req.user));
+    res.json(await attendanceService.saveScheduleAttendance(Number(req.params.id), req.body.records, req.user, req.query));
 }
 
 async function getMyAttendance(req, res) {

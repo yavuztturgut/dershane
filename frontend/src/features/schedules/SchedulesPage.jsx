@@ -25,10 +25,8 @@ import { openAppConfirmModal } from '../../components/ui/app-confirm-modal';
 import { getErrorMessage } from '../../lib/api-client';
 import { notifyError } from '../../lib/notifications';
 import { queryClient } from '../../lib/query-client';
-import { coursesApi } from '../courses/courses.api';
-import { classesApi } from '../classes/classes.api';
-import { rolesApi } from '../roles/roles.api';
-import { usersApi } from '../users/users.api';
+import { queryKeys } from '../../lib/query-keys';
+import { useLookups } from '../lookups/use-lookups';
 import { schedulesApi } from './schedules.api';
 import { getCourseColor } from './schedule.utils';
 import { AttendanceEditor } from '../attendance/AttendanceEditor';
@@ -124,16 +122,13 @@ export function SchedulesPage() {
     ...visibleRange,
     ...(isAdmin ? { course_id: filters.courseId || undefined, class_id: filters.classId || undefined, teacher_id: filters.teacherId || undefined } : {}),
   };
-  const schedulesQuery = useQuery({ queryKey: ['schedules', scheduleParams], queryFn: () => schedulesApi.getAll(scheduleParams) });
+  const schedulesQuery = useQuery({ queryKey: queryKeys.schedules.list(scheduleParams), queryFn: () => schedulesApi.getAll(scheduleParams) });
   const detailQuery = useQuery({
-    queryKey: ['schedules', editingId],
+    queryKey: queryKeys.schedules.detail(editingId),
     queryFn: () => schedulesApi.getById(editingId),
     enabled: Boolean(editingId),
   });
-  const coursesQuery = useQuery({ queryKey: ['courses'], queryFn: coursesApi.getAll, enabled: isAdmin });
-  const classesQuery = useQuery({ queryKey: ['classes'], queryFn: classesApi.getAll, enabled: isAdmin });
-  const rolesQuery = useQuery({ queryKey: ['roles'], queryFn: rolesApi.getAll, enabled: isAdmin });
-  const usersQuery = useQuery({ queryKey: ['users'], queryFn: usersApi.getAll, enabled: isAdmin });
+  const lookupsQuery = useLookups(isAdmin);
 
   useEffect(() => {
     const defaultView = isMobile ? 'timeGridDay' : 'timeGridWeek';
@@ -169,13 +164,14 @@ export function SchedulesPage() {
 
       return editingId ? schedulesApi.update(editingId, payload) : schedulesApi.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (schedule) => {
       notifications.show({ color: 'green', message: t(editingId ? 'updated' : 'created') });
-      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
       if (editingId) {
+        queryClient.setQueryData(queryKeys.schedules.detail(editingId), schedule);
         form.resetDirty();
         setIsEditing(false);
-        queryClient.invalidateQueries({ queryKey: ['schedules', editingId] });
       } else {
         setOpened(false);
       }
@@ -193,16 +189,16 @@ export function SchedulesPage() {
     onSuccess: () => {
       notifications.show({ color: 'green', message: t('deleted') });
       setOpened(false);
-      queryClient.invalidateQueries({ queryKey: ['schedules'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.schedules.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+      queryClient.removeQueries({ queryKey: queryKeys.schedules.detail(editingId) });
     },
     onError: (error) => notifyError(getErrorMessage(error)),
   });
 
-  const teacherRoleId = rolesQuery.data?.find((role) => role.name === 'teacher')?.id;
-  const courseOptions = coursesQuery.data?.map((course) => ({ value: String(course.id), label: course.name })) || [];
-  const classOptions = classesQuery.data?.map((classItem) => ({ value: String(classItem.id), label: classItem.name })) || [];
-  const teacherOptions = usersQuery.data?.filter((item) => item.role_id === teacherRoleId && item.is_active)
-    .map((item) => ({ value: String(item.id), label: item.name })) || [];
+  const courseOptions = lookupsQuery.data?.courses.map((course) => ({ value: String(course.id), label: course.name })) || [];
+  const classOptions = lookupsQuery.data?.classes.map((classItem) => ({ value: String(classItem.id), label: classItem.name })) || [];
+  const teacherOptions = lookupsQuery.data?.teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.name })) || [];
   const events = useMemo(() => (schedulesQuery.data || []).map((schedule) => ({
     id: String(schedule.id),
     title: schedule.course_name,
@@ -301,8 +297,8 @@ export function SchedulesPage() {
     else setIsEditing(false);
   }
 
-  if (schedulesQuery.isLoading) return <PageLoader />;
-  if (schedulesQuery.isError) return <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(schedulesQuery.error)}</Alert>;
+  if (schedulesQuery.isLoading || (isAdmin && lookupsQuery.isLoading)) return <PageLoader />;
+  if (schedulesQuery.isError || (isAdmin && lookupsQuery.isError)) return <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(schedulesQuery.error || lookupsQuery.error)}</Alert>;
 
   return (
     <div className={styles.page}>
