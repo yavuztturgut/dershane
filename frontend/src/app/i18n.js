@@ -5,7 +5,7 @@ import tr from '../locales/tr';
 
 i18n.use(initReactI18next).init({
   resources: { en, tr },
-  lng: localStorage.getItem('language') || 'en',
+  lng: localStorage.getItem('language') || 'tr',
   fallbackLng: 'en',
   interpolation: { escapeValue: false },
 });
