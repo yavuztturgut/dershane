@@ -12,10 +12,9 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import trLocale from '@fullcalendar/core/locales/tr';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../auth/use-auth';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { DualPanelModal } from '../../../components/ui/DualPanelModal/DualPanelModal';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
@@ -28,6 +27,7 @@ import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { schedulesApi } from '../schedules.api';
 import { getCourseColor, getInitialVisibleRange } from '../schedule.utils';
 import { AttendanceEditor } from '../../attendance/AttendanceEditor/AttendanceEditor';
+import { attendanceApi } from '../../attendance/attendance.api';
 import styles from './SchedulesPage.module.css';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { ScheduleEvent } from '../ScheduleEvent/ScheduleEvent';
@@ -50,6 +50,7 @@ function getTimestamp(value) {
 
 export function SchedulesPage() {
   const { t, i18n } = useTranslation();
+  const modalQueryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user.role_name === 'admin';
   const canManageAttendance = isAdmin || user.role_name === 'teacher';
@@ -58,6 +59,7 @@ export function SchedulesPage() {
   const calendarRef = useRef(null);
   const saveRequestRef = useRef(false);
   const attendanceEditorRef = useRef(null);
+  const modalRequestRef = useRef(0);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -104,6 +106,7 @@ export function SchedulesPage() {
     queryKey: queryKeys.schedules.detail(editingId),
     queryFn: () => schedulesApi.getById(editingId),
     enabled: Boolean(editingId),
+    staleTime: cachePolicy.operational,
   });
   const lookupsQuery = useLookups(isAdmin);
 
@@ -203,7 +206,27 @@ export function SchedulesPage() {
     setOpened(true);
   }
 
-  function openEdit(id) {
+  async function openEdit(id) {
+    const requestId = modalRequestRef.current + 1;
+    modalRequestRef.current = requestId;
+    const schedule = schedulesQuery.data?.find((item) => item.id === id);
+    if (schedule) modalQueryClient.setQueryData(queryKeys.schedules.detail(id), schedule);
+
+    try {
+      await Promise.all([
+        ...(!schedule ? [modalQueryClient.ensureQueryData({ queryKey: queryKeys.schedules.detail(id), queryFn: () => schedulesApi.getById(id), staleTime: cachePolicy.operational })] : []),
+        ...(canManageAttendance ? [modalQueryClient.ensureQueryData({
+          queryKey: queryKeys.attendance.schedule(id),
+          queryFn: () => attendanceApi.getForSchedule(id, { student_id: undefined }),
+          staleTime: cachePolicy.operational,
+        })] : []),
+      ]);
+    } catch (error) {
+      if (modalRequestRef.current === requestId) notifyError(getErrorMessage(error));
+      return;
+    }
+    if (modalRequestRef.current !== requestId) return;
+
     setEditingId(id);
     setIsEditing(false);
     setAttendanceDirty(false);
@@ -356,7 +379,7 @@ export function SchedulesPage() {
           activeTab={mobilePanel}
           onActiveTabChange={setMobilePanel}
           closeLabel={t('close')}
-          leftContent={detailQuery.isLoading ? <PageLoader /> : detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : isEditing ? (
+          leftContent={detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : isEditing ? (
             <form id="schedule-edit-form" onSubmit={form.onSubmit(saveSchedule)}>
               <ScheduleFormFields form={form} courseOptions={courseOptions} classOptions={classOptions} teacherOptions={teacherOptions} t={t} stacked />
             </form>
@@ -387,7 +410,7 @@ export function SchedulesPage() {
           title={t(editingId ? 'scheduleDetails' : 'createSchedule')}
           size="lg"
         >
-          {editingId && detailQuery.isLoading ? <PageLoader /> : detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : editingId && detailQuery.data ? (
+          {detailQuery.isError ? <Alert color="red">{getErrorMessage(detailQuery.error)}</Alert> : editingId && detailQuery.data ? (
             <ScheduleDetails schedule={detailQuery.data} locale={i18n.language} t={t} />
           ) : (
             <form onSubmit={form.onSubmit(saveSchedule)}>

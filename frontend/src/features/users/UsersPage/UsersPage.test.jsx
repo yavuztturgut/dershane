@@ -51,4 +51,15 @@ describe('UsersPage filtering', () => {
     await act(async () => resolveFilteredPage({ items: [{ ...firstPage.items[0], id: 2, name: 'Grace', role_id: 2 }], page: 1, totalPages: 1 }));
     expect(await screen.findAllByText('Grace')).not.toHaveLength(0);
   });
+
+  it('opens the edit modal with list data and no loading spinner', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await screen.findAllByText('Ada');
+
+    await user.click(screen.getAllByRole('button', { name: 'Edit' })[0]);
+
+    expect(screen.getByDisplayValue('ada@example.com')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
+  });
 });

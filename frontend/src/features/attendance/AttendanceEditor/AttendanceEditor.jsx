@@ -2,7 +2,6 @@ import { Alert, Button, Checkbox, Group, Select, Table, Text } from '@mantine/co
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
@@ -61,7 +60,7 @@ export const AttendanceEditor = forwardRef(function AttendanceEditor({ scheduleI
   useEffect(() => {
     callbacksRef.current.onCanSaveChange?.(Boolean(query.data?.records.length) && !query.isLoading && !query.isError);
   }, [query.data, query.isError, query.isLoading]);
-  if (query.isLoading) return <PageLoader />;
+  if (query.isLoading) return null;
   if (query.isError) return <Alert color="red">{getErrorMessage(query.error)}</Alert>;
   if (!query.data.records.length) return <Text c="dimmed">{t('noStudents')}</Text>;
   const options = ['present', 'absent', 'late', 'excused'].map((status) => ({ value: status, label: t(`attendanceStatus.${status}`) }));

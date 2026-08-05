@@ -3,11 +3,10 @@ import { useForm } from '@mantine/form';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
@@ -29,6 +28,7 @@ const initialValues = { role_id: '', class_id: '', name: '', email: '', password
 
 export function UsersPage() {
   const { t } = useTranslation();
+  const modalQueryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamValue = searchParams.get('search') || '';
   const [searchInput, setSearchInput] = useState(searchParamValue);
@@ -46,7 +46,7 @@ export function UsersPage() {
     staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
-  const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId) });
+  const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId), staleTime: cachePolicy.operational });
   const form = useForm({
     initialValues,
     validate: {
@@ -102,7 +102,12 @@ export function UsersPage() {
   const clearFilters = () => setSearchParams((current) => { const next = new URLSearchParams(); if (current.get('search')) next.set('search', current.get('search')); return next; });
 
   function openCreate() { setEditingId(null); form.setValues(initialValues); setOpened(true); }
-  function openEdit(id) { setEditingId(id); setOpened(true); }
+  function openEdit(user) {
+    modalQueryClient.setQueryData(queryKeys.users.detail(user.id), user);
+    form.setValues({ ...user, role_id: String(user.role_id), class_id: user.class_id ? String(user.class_id) : '', password: '' });
+    setEditingId(user.id);
+    setOpened(true);
+  }
   function confirmDelete(user) { openAppConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) }); }
 
   useSuspendingQueries([
@@ -112,13 +117,13 @@ export function UsersPage() {
   if ((usersQuery.isError && !usersQuery.data) || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
   const pageData = usersQuery.data;
 
-  const rowActions = (user) => <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
+  const rowActions = (user) => <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
   const filterFields = <UserFilters searchParams={searchParams} setFilter={setFilter} roleOptions={roleOptions} classOptions={classOptions} t={t} />;
 
   return <PageContainer><PageHeader title={t('users')} description={t('usersDescription')} onCreate={openCreate} createLabel={t('create')} />
     <ResponsiveFilterPanel primary={<TextInput placeholder={t('search')} value={searchInput} onChange={(event) => setSearchInput(event.currentTarget.value)} />} activeCount={activeFilterCount} onClear={clearFilters}>{filterFields}</ResponsiveFilterPanel>
     <div aria-busy={usersQuery.isFetching}>{!pageData.items.length ? <EmptyState message={t('noData')} actionLabel={t('clearFilters')} onAction={activeFilterCount ? clearFilters : undefined} /> : <UserList users={pageData.items} roleName={roleName} className={className} actions={rowActions} t={t} />}</div>
     {pageData.totalPages > 1 && <Group justify="center" mt="lg"><Pagination total={pageData.totalPages} value={pageData.page} onChange={(page) => setFilter('page', String(page))} /></Group>}
-    <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>{editingId && detailQuery.isLoading ? <PageLoader /> : detailQuery.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : <UserForm form={form} editingId={editingId} roleOptions={roleOptions} classOptions={classOptions} saving={saveMutation.isPending} onCancel={() => setOpened(false)} onSubmit={(values) => saveMutation.mutate(values)} t={t} />}</AppModal>
+    <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>{detailQuery.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : <UserForm form={form} editingId={editingId} roleOptions={roleOptions} classOptions={classOptions} saving={saveMutation.isPending} onCancel={() => setOpened(false)} onSubmit={(values) => saveMutation.mutate(values)} t={t} />}</AppModal>
   </PageContainer>;
 }

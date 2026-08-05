@@ -152,6 +152,7 @@ describe('SchedulesPage lesson modal', () => {
     renderPage();
     const modal = await openLesson();
 
+    expect(within(modal).queryByLabelText('Loading')).not.toBeInTheDocument();
     expect(within(modal).getAllByText('Schedule details').length).toBeGreaterThan(0);
     expect(within(modal).getAllByText('Attendance').length).toBeGreaterThan(0);
     expect(await within(modal).findByText('Student One')).toBeInTheDocument();

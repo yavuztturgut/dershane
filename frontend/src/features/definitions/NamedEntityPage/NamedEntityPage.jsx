@@ -2,15 +2,15 @@ import { ActionIcon, Alert, Button, Group, Table, TextInput } from '@mantine/cor
 import { useForm } from '@mantine/form';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
+import { cachePolicy } from '../../../shared/query/cache-policy';
 import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
@@ -22,6 +22,7 @@ import { useSuspendingQueries } from '../../../shared/query/use-suspending-queri
 
 export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const { t } = useTranslation();
+  const modalQueryClient = useQueryClient();
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const saveRequestRef = useRef(false);
@@ -29,7 +30,7 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const setFormValues = form.setValues;
   const lookupsQuery = useLookups();
   const items = lookupsQuery.data?.[entity];
-  const detailQuery = useQuery({ queryKey: queryKeys.entities.detail(entity, editingId), queryFn: () => api.getById(editingId), enabled: Boolean(editingId) });
+  const detailQuery = useQuery({ queryKey: queryKeys.entities.detail(entity, editingId), queryFn: () => api.getById(editingId), enabled: Boolean(editingId), staleTime: cachePolicy.operational });
 
   useEffect(() => {
     if (detailQuery.data) setFormValues({ name: detailQuery.data.name });
@@ -70,8 +71,10 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
     setOpened(true);
   }
 
-  function openEdit(id) {
-    setEditingId(id);
+  function openEdit(item) {
+    modalQueryClient.setQueryData(queryKeys.entities.detail(entity, item.id), item);
+    form.setValues({ name: item.name });
+    setEditingId(item.id);
     setOpened(true);
   }
 
@@ -94,7 +97,7 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   useSuspendingQueries([{ query: lookupsQuery, options: getLookupsQueryOptions() }]);
   if (lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => lookupsQuery.refetch()}>{t('retry')}</Button></Alert>;
 
-  const actions = (item) => readOnly ? t('systemRole') : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(item.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
+  const actions = (item) => readOnly ? t('systemRole') : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(item)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
 
   return (
     <PageContainer>
@@ -112,12 +115,10 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
           </Table>
         </Surface>} mobile={items.map((item) => <RecordCard key={item.id} title={item.name} actions={actions(item)} />)} /></>)}
       {!readOnly && <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>
-        {editingId && detailQuery.isLoading ? <PageLoader /> : (
-          <form onSubmit={form.onSubmit(saveEntity)}>
-            <TextInput label={t('name')} required {...form.getInputProps('name')} />
-            <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group>
-          </form>
-        )}
+        <form onSubmit={form.onSubmit(saveEntity)}>
+          <TextInput label={t('name')} required {...form.getInputProps('name')} />
+          <Group justify="flex-end" mt="lg"><Button variant="default" onClick={() => setOpened(false)}>{t('cancel')}</Button><Button type="submit" loading={saveMutation.isPending}>{t('save')}</Button></Group>
+        </form>
       </AppModal>}
     </PageContainer>
   );
