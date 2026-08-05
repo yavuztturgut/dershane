@@ -53,7 +53,8 @@ export function SchedulesPage() {
   const { user } = useAuth();
   const isAdmin = user.role_name === 'admin';
   const canManageAttendance = isAdmin || user.role_name === 'teacher';
-  const isMobile = useMediaQuery('(max-width: 48rem)');
+  const isMobile = useMediaQuery('(max-width: 48rem)', false, { getInitialValueInEffect: false });
+  const initialView = isMobile ? 'timeGridDay' : 'timeGridWeek';
   const calendarRef = useRef(null);
   const saveRequestRef = useRef(false);
   const attendanceEditorRef = useRef(null);
@@ -64,10 +65,10 @@ export function SchedulesPage() {
   const [attendanceSaving, setAttendanceSaving] = useState(false);
   const [attendanceCanSave, setAttendanceCanSave] = useState(false);
   const [mobilePanel, setMobilePanel] = useState('details');
-  const [activeView, setActiveView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
+  const [activeView, setActiveView] = useState(initialView);
   const [dateTitle, setDateTitle] = useState('');
   const [filters, setFilters] = useState({ courseId: '', classId: '', teacherId: '' });
-  const [visibleRange, setVisibleRange] = useState(getInitialVisibleRange);
+  const [visibleRange, setVisibleRange] = useState(() => getInitialVisibleRange(initialView));
   const form = useForm({
     initialValues,
     validate: {

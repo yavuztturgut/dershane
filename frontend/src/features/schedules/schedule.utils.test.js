@@ -22,14 +22,22 @@ describe('schedule utilities', () => {
     expect(filterSchedules(schedules, { courseId: '', classId: '', teacherId: '4' })).toEqual([schedules[1], schedules[2]]);
   });
 
-  it('creates a stable Istanbul day range without render-time milliseconds', () => {
+  it('creates the exact Istanbul day range for the initial mobile view', () => {
     const reference = new Date('2026-08-04T21:30:45.678Z');
 
-    expect(getInitialVisibleRange(reference)).toEqual({
-      start: '2026-07-28T21:00:00.000Z',
-      end: '2026-09-08T21:00:00.000Z',
+    expect(getInitialVisibleRange('timeGridDay', reference)).toEqual({
+      start: '2026-08-04T21:00:00.000Z',
+      end: '2026-08-05T21:00:00.000Z',
     });
-    expect(getInitialVisibleRange(reference)).toEqual(getInitialVisibleRange(reference));
+  });
+
+  it('creates the exact Monday-to-Monday Istanbul range for the initial desktop view', () => {
+    const reference = new Date('2026-08-04T21:30:45.678Z');
+
+    expect(getInitialVisibleRange('timeGridWeek', reference)).toEqual({
+      start: '2026-08-02T21:00:00.000Z',
+      end: '2026-08-09T21:00:00.000Z',
+    });
   });
 });
 

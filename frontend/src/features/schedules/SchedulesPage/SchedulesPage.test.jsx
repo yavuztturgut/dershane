@@ -8,16 +8,27 @@ let calendarMountCount = 0;
 
 vi.mock('@fullcalendar/react', async () => {
   const React = await import('react');
+  const { getInitialVisibleRange } = await import('../schedule.utils');
+  const { instantToIstanbulPickerDate } = await import('../../../shared/time/istanbul-date-time');
   return {
     default: React.forwardRef(function CalendarMock(props, ref) {
-      React.useEffect(() => { calendarMountCount += 1; }, []);
+      const initialProps = React.useRef({ datesSet: props.datesSet, initialView: props.initialView });
+      React.useEffect(() => {
+        calendarMountCount += 1;
+        const range = getInitialVisibleRange(initialProps.current.initialView);
+        initialProps.current.datesSet({
+          start: instantToIstanbulPickerDate(range.start),
+          end: instantToIstanbulPickerDate(range.end),
+          view: { title: 'Initial range' },
+        });
+      }, []);
       React.useImperativeHandle(ref, () => ({ getApi: () => ({
         changeView: vi.fn(),
         prev: vi.fn(),
         next: () => props.datesSet({ startStr: '2026-08-10T00:00:00', endStr: '2026-08-17T00:00:00', view: { title: '10–16 August 2026' } }),
         today: vi.fn(),
       }) }));
-      return <button type="button" data-event-min-height={String(props.eventMinHeight)} data-slot-event-overlap={String(props.slotEventOverlap)} onClick={() => props.eventClick({ event: { id: '1' } })}>Open lesson</button>;
+      return <button type="button" data-initial-view={props.initialView} data-event-min-height={String(props.eventMinHeight)} data-slot-event-overlap={String(props.slotEventOverlap)} onClick={() => props.eventClick({ event: { id: '1' } })}>Open lesson</button>;
     }),
   };
 });
@@ -29,9 +40,10 @@ let currentUser = { id: 1, name: 'Admin', role_name: 'admin' };
 vi.mock('../../auth/use-auth', () => ({ useAuth: () => ({ user: currentUser }) }));
 
 const schedule = { id: 1, course_id: 1, course_name: 'Turkish', class_id: 1, class_name: 'Verbal', teacher_id: 2, teacher_name: 'Teacher', start_time: '2026-08-03T05:00:00.000Z', end_time: '2026-08-03T06:00:00.000Z' };
+const getSchedules = vi.fn(async () => [schedule]);
 const updateSchedule = vi.fn(async () => schedule);
 vi.mock('../schedules.api', () => ({
-  schedulesApi: { getAll: vi.fn(async () => [schedule]), getById: vi.fn(async () => schedule), create: vi.fn(), update: (...args) => updateSchedule(...args), remove: vi.fn() },
+  schedulesApi: { getAll: (...args) => getSchedules(...args), getById: vi.fn(async () => schedule), create: vi.fn(), update: (...args) => updateSchedule(...args), remove: vi.fn() },
 }));
 const getLookups = vi.fn(async () => ({
   roles: [{ id: 2, name: 'teacher' }],
@@ -85,6 +97,7 @@ describe('SchedulesPage lesson modal', () => {
     currentUser = { id: 1, name: 'Admin', role_name: 'admin' };
     getAttendance.mockClear();
     saveAttendance.mockClear();
+    getSchedules.mockClear();
     updateSchedule.mockClear();
     getLookups.mockClear();
     calendarMountCount = 0;
@@ -101,6 +114,9 @@ describe('SchedulesPage lesson modal', () => {
     }));
     renderPage();
 
+    const calendar = await screen.findByRole('button', { name: 'Open lesson' });
+    expect(calendar).toHaveAttribute('data-initial-view', 'timeGridDay');
+    await waitFor(() => expect(getSchedules).toHaveBeenCalledTimes(1));
     const filterButton = await screen.findByRole('button', { name: /Filters/ });
     expect(filterButton).toHaveAttribute('aria-expanded', 'false');
     fireEvent.click(filterButton);
@@ -112,6 +128,8 @@ describe('SchedulesPage lesson modal', () => {
   it('keeps genuine overlaps side by side without forcing short adjacent lessons to collide', async () => {
     renderPage();
     const calendar = await screen.findByRole('button', { name: 'Open lesson' });
+    expect(calendar).toHaveAttribute('data-initial-view', 'timeGridWeek');
+    await waitFor(() => expect(getSchedules).toHaveBeenCalledTimes(1));
     expect(calendar).toHaveAttribute('data-slot-event-overlap', 'false');
     expect(calendar).toHaveAttribute('data-event-min-height', '24');
   });

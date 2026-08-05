@@ -5,13 +5,21 @@ const courseColors = [
   '#ea580c', '#e11d48', '#4f46e5', '#65a30d',
 ];
 
-export function getInitialVisibleRange(referenceDate = new Date()) {
+export function getInitialVisibleRange(view, referenceDate = new Date()) {
   const istanbulToday = instantToIstanbulPickerDate(referenceDate);
   istanbulToday.setHours(0, 0, 0, 0);
   const start = new Date(istanbulToday);
   const end = new Date(istanbulToday);
-  start.setDate(start.getDate() - 7);
-  end.setDate(end.getDate() + 35);
+
+  if (view === 'timeGridWeek') {
+    const daysSinceMonday = (start.getDay() + 6) % 7;
+    start.setDate(start.getDate() - daysSinceMonday);
+    end.setTime(start.getTime());
+    end.setDate(end.getDate() + 7);
+  } else {
+    end.setDate(end.getDate() + 1);
+  }
+
   return { start: istanbulWallClockToIso(start), end: istanbulWallClockToIso(end) };
 }
 
