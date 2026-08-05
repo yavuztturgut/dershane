@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterSchedules, getCourseColor } from './schedule.utils';
+import { filterSchedules, getCourseColor, getInitialVisibleRange } from './schedule.utils';
 import {
   formatIstanbulTime, instantToIstanbulCalendarDateTime,
   instantToIstanbulPickerDate, istanbulWallClockToIso,
@@ -20,6 +20,16 @@ describe('schedule utilities', () => {
   it('filters schedules by selected course, class and teacher', () => {
     expect(filterSchedules(schedules, { courseId: '1', classId: '2', teacherId: '' })).toEqual([schedules[0]]);
     expect(filterSchedules(schedules, { courseId: '', classId: '', teacherId: '4' })).toEqual([schedules[1], schedules[2]]);
+  });
+
+  it('creates a stable Istanbul day range without render-time milliseconds', () => {
+    const reference = new Date('2026-08-04T21:30:45.678Z');
+
+    expect(getInitialVisibleRange(reference)).toEqual({
+      start: '2026-07-28T21:00:00.000Z',
+      end: '2026-09-08T21:00:00.000Z',
+    });
+    expect(getInitialVisibleRange(reference)).toEqual(getInitialVisibleRange(reference));
   });
 });
 

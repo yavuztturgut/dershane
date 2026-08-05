@@ -15,6 +15,7 @@ import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
+import { cachePolicy } from '../../../shared/query/cache-policy';
 import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { usersApi } from '../users.api';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
@@ -42,6 +43,7 @@ export function UsersPage() {
     queryKey: queryKeys.users.list(queryParams),
     queryFn: () => usersApi.getPage(queryParams),
     placeholderData: keepPreviousData,
+    staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
   const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId) });

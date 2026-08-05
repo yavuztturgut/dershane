@@ -7,6 +7,6 @@ export function useSuspendingQueries(entries) {
   ));
 
   if (pendingQueries.length) {
-    throw Promise.all(pendingQueries.map(({ options }) => queryClient.fetchQuery(options)));
+    throw Promise.all(pendingQueries.map(({ options }) => queryClient.ensureQueryData(options)));
   }
 }

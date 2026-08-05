@@ -10,7 +10,10 @@ const lookups = {
   roles: [{ id: 1, name: 'admin' }, { id: 2, name: 'teacher' }],
   classes: [{ id: 1, name: 'Class A' }],
 };
-vi.mock('../../lookups/use-lookups', () => ({ useLookups: () => ({ data: lookups, isLoading: false, isError: false }) }));
+vi.mock('../../lookups/use-lookups', () => ({
+  getLookupsQueryOptions: () => ({ enabled: true }),
+  useLookups: () => ({ data: lookups, isLoading: false, isError: false }),
+}));
 
 const firstPage = { items: [{ id: 1, name: 'Ada', email: 'ada@example.com', role_id: 1, class_id: null, is_active: true }], page: 1, totalPages: 1 };
 const getPage = vi.fn(async () => firstPage);

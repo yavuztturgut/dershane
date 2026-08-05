@@ -23,9 +23,10 @@ import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
+import { cachePolicy } from '../../../shared/query/cache-policy';
 import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { schedulesApi } from '../schedules.api';
-import { getCourseColor } from '../schedule.utils';
+import { getCourseColor, getInitialVisibleRange } from '../schedule.utils';
 import { AttendanceEditor } from '../../attendance/AttendanceEditor/AttendanceEditor';
 import styles from './SchedulesPage.module.css';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
@@ -66,13 +67,7 @@ export function SchedulesPage() {
   const [activeView, setActiveView] = useState(isMobile ? 'timeGridDay' : 'timeGridWeek');
   const [dateTitle, setDateTitle] = useState('');
   const [filters, setFilters] = useState({ courseId: '', classId: '', teacherId: '' });
-  const [visibleRange, setVisibleRange] = useState(() => {
-    const start = new Date();
-    start.setDate(start.getDate() - 7);
-    const end = new Date();
-    end.setDate(end.getDate() + 35);
-    return { start: istanbulWallClockToIso(start), end: istanbulWallClockToIso(end) };
-  });
+  const [visibleRange, setVisibleRange] = useState(getInitialVisibleRange);
   const form = useForm({
     initialValues,
     validate: {
@@ -101,6 +96,7 @@ export function SchedulesPage() {
     queryKey: queryKeys.schedules.list(scheduleParams),
     queryFn: () => schedulesApi.getAll(scheduleParams),
     placeholderData: keepPreviousData,
+    staleTime: cachePolicy.operational,
   };
   const schedulesQuery = useQuery(schedulesQueryOptions);
   const detailQuery = useQuery({

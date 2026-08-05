@@ -9,6 +9,7 @@ import { useAuth } from '../../auth/use-auth';
 import { usersApi } from '../../users/users.api';
 import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { queryKeys } from '../../../shared/query/query-keys';
+import { cachePolicy } from '../../../shared/query/cache-policy';
 import { AttendanceEditor } from '../AttendanceEditor/AttendanceEditor';
 import { attendanceApi } from '../attendance.api';
 import styles from './AttendancePage.module.css';
@@ -57,6 +58,7 @@ export function AttendancePage() {
     queryFn: () => isAdmin ? attendanceApi.getDailyReport(params) : attendanceApi.getMine(params),
     enabled: ['admin', 'student'].includes(user.role_name),
     placeholderData: keepPreviousData,
+    staleTime: cachePolicy.operational,
   };
   const query = useQuery(attendanceQueryOptions);
   const lookupsQuery = useLookups(isAdmin);
@@ -65,6 +67,7 @@ export function AttendancePage() {
     queryKey: queryKeys.users.options(studentOptionsParams),
     queryFn: () => usersApi.getOptions(studentOptionsParams),
     enabled: isAdmin,
+    staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
   const viewKey = JSON.stringify(params);
