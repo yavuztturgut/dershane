@@ -1,5 +1,6 @@
 export default {
   translation: {
+    pageTitles: { brand: 'Academy', dashboard: 'Dashboard', login: 'Sign In', forgotPassword: 'Forgot Password', resetPassword: 'Reset Password', users: 'Users', roles: 'Roles', classes: 'Classes', courses: 'Courses', schedules: 'Schedules', attendance: 'Attendance', profile: 'Profile' },
     appName: 'Academy Portal', login: 'Sign in', loginSubtitle: 'Sign in to the management panel',
     forgotPassword: 'Forgot password?', forgotPasswordHelp: 'Enter your email address and we will send a secure reset link.', sendResetLink: 'Send reset link', resetEmailSent: 'If the account exists, a reset email has been sent.', backToLogin: 'Back to sign in',
     logout: 'Log out', email: 'Email', password: 'Password',

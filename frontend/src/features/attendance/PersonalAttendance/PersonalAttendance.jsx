@@ -1,7 +1,6 @@
 import { Alert, Badge, SimpleGrid, Table } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { RecordCard } from '../../../components/ui/RecordCard/RecordCard';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { ResponsiveList } from '../../../components/ui/ResponsiveList/ResponsiveList';
@@ -12,7 +11,6 @@ import { formatIstanbulDateTime } from '../../../shared/time/istanbul-date-time'
 const colors = { present: 'green', absent: 'red', late: 'orange', excused: 'pink', not_recorded: 'gray' };
 
 export function PersonalAttendance({ query, filters, changeFilter, clearFilters, t, locale }) {
-  if (query.isLoading) return <PageLoader />;
   if (query.isError && !query.data) return <Alert color="red">{t('errors.GENERIC')}</Alert>;
   const badge = (record) => <Badge color={colors[record.status] || 'gray'}>{record.status ? t(`attendanceStatus.${record.status}`) : t('notRecorded')}</Badge>;
   return <div aria-busy={query.isFetching}>

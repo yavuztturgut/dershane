@@ -8,7 +8,7 @@ import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
-import { useLookups } from '../../lookups/use-lookups';
+import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
@@ -18,6 +18,7 @@ import { Surface } from '../../../components/ui/Surface/Surface';
 import { RecordCard } from '../../../components/ui/RecordCard/RecordCard';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
 import { ResponsiveList } from '../../../components/ui/ResponsiveList/ResponsiveList';
+import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
 
 export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const { t } = useTranslation();
@@ -90,7 +91,7 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
     });
   }
 
-  if (lookupsQuery.isLoading) return <PageLoader />;
+  useSuspendingQueries([{ query: lookupsQuery, options: getLookupsQueryOptions() }]);
   if (lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => lookupsQuery.refetch()}>{t('retry')}</Button></Alert>;
 
   const actions = (item) => readOnly ? t('systemRole') : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(item.id)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;

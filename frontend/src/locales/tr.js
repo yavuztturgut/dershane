@@ -1,5 +1,6 @@
 export default {
   translation: {
+    pageTitles: { brand: 'Dershane', dashboard: 'Dashboard', login: 'Giriş Yap', forgotPassword: 'Şifremi Unuttum', resetPassword: 'Şifreyi Sıfırla', users: 'Kullanıcılar', roles: 'Roller', classes: 'Sınıflar', courses: 'Dersler', schedules: 'Ders Programı', attendance: 'Yoklama', profile: 'Profil' },
     appName: 'Dershane Portalı', login: 'Giriş yap', loginSubtitle: 'Yönetim paneline giriş yapın',
     forgotPassword: 'Şifremi unuttum?', forgotPasswordHelp: 'E-posta adresinizi girin; güvenli sıfırlama bağlantısını gönderelim.', sendResetLink: 'Sıfırlama bağlantısı gönder', resetEmailSent: 'Hesap mevcutsa sıfırlama e-postası gönderildi.', backToLogin: 'Girişe dön',
     logout: 'Çıkış yap', email: 'E-posta', password: 'Şifre',

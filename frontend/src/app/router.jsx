@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from '../components/layout/AppLayout/AppLayout';
 import { PageLoader } from '../components/ui/PageLoader/PageLoader';
 import { ProtectedRoute, RoleRoute } from './route-guards';
+import { RouteMetadata } from './route-metadata';
 
 const lazyPage = (loader, name) => lazy(() => loader().then((module) => ({ default: module[name] })));
 const LoginPage = lazyPage(() => import('../features/auth/LoginPage/LoginPage'), 'LoginPage');
@@ -18,7 +19,7 @@ const ProfilePage = lazyPage(() => import('../features/profile/ProfilePage/Profi
 const AttendancePage = lazyPage(() => import('../features/attendance/AttendancePage/AttendancePage'), 'AttendancePage');
 
 export function AppRouter() {
-  return <BrowserRouter><Suspense fallback={<PageLoader fullPage />}><Routes>
+  return <BrowserRouter><RouteMetadata /><Suspense fallback={<PageLoader fullPage />}><Routes>
     <Route path="/login" element={<LoginPage />} />
     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />

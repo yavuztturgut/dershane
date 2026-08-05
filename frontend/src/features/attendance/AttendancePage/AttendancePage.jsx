@@ -5,10 +5,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
-import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { useAuth } from '../../auth/use-auth';
 import { usersApi } from '../../users/users.api';
-import { useLookups } from '../../lookups/use-lookups';
+import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { AttendanceEditor } from '../AttendanceEditor/AttendanceEditor';
 import { attendanceApi } from '../attendance.api';
@@ -18,6 +17,7 @@ import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { formatIstanbulTime } from '../../../shared/time/istanbul-date-time';
 import { PersonalAttendance } from '../PersonalAttendance/PersonalAttendance';
+import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
 
 function toDate(value) {
   if (!value) return undefined;
@@ -52,19 +52,21 @@ export function AttendancePage() {
     page,
     pageSize: isAdmin ? 7 : undefined,
   }), [filters, isAdmin, page]);
-  const query = useQuery({
+  const attendanceQueryOptions = {
     queryKey: isAdmin ? queryKeys.attendance.dailyReport(params) : queryKeys.attendance.mine(params),
     queryFn: () => isAdmin ? attendanceApi.getDailyReport(params) : attendanceApi.getMine(params),
     enabled: ['admin', 'student'].includes(user.role_name),
     placeholderData: keepPreviousData,
-  });
+  };
+  const query = useQuery(attendanceQueryOptions);
   const lookupsQuery = useLookups(isAdmin);
   const studentOptionsParams = { role: 'student' };
-  const usersQuery = useQuery({
+  const usersQueryOptions = {
     queryKey: queryKeys.users.options(studentOptionsParams),
     queryFn: () => usersApi.getOptions(studentOptionsParams),
     enabled: isAdmin,
-  });
+  };
+  const usersQuery = useQuery(usersQueryOptions);
   const viewKey = JSON.stringify(params);
 
   useEffect(() => {
@@ -131,6 +133,12 @@ export function AttendancePage() {
     }, closedIds);
   }
 
+  useSuspendingQueries([
+    { query, options: attendanceQueryOptions },
+    { query: lookupsQuery, options: getLookupsQueryOptions(isAdmin) },
+    { query: usersQuery, options: usersQueryOptions },
+  ]);
+
   if (user.role_name === 'teacher') return <Alert>{t('teacherAttendanceHint')}</Alert>;
 
   return <PageContainer><PageHeader title={t('attendance')} description={t('attendanceDescription')} />
@@ -142,7 +150,7 @@ export function AttendancePage() {
         <DateInput clearable placeholder={t('start')} value={filters.start} onChange={(start) => changeFilter('start', start)} />
         <DateInput clearable placeholder={t('end')} value={filters.end} onChange={(end) => changeFilter('end', end)} />
       </SimpleGrid></ResponsiveFilterPanel>
-      <div aria-busy={query.isFetching}>{(query.isLoading || lookupsQuery.isLoading || usersQuery.isLoading) ? <PageLoader /> : (query.isError && !query.data) ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
+      <div aria-busy={query.isFetching}>{(query.isError && !query.data) ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
         <Accordion multiple value={openDays} onChange={changeDays} className={styles.days}>
           {query.data.days.map((day) => <Accordion.Item value={day.date} key={day.date} className={styles.day}>
             <Accordion.Control><Group justify="space-between" wrap="wrap" gap="xs" pr="sm"><Text fw={700}>{formatDay(day.date)}</Text><Group gap="xs"><Badge variant="light">{t('lessonCount', { count: day.lesson_count })}</Badge><Badge color={day.attendance_taken_count === day.lesson_count ? 'green' : 'gray'} variant="light">{t('attendanceProgress', { taken: day.attendance_taken_count, total: day.lesson_count })}</Badge></Group></Group></Accordion.Control>

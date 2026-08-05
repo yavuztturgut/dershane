@@ -23,7 +23,7 @@ import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
-import { useLookups } from '../../lookups/use-lookups';
+import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { schedulesApi } from '../schedules.api';
 import { getCourseColor } from '../schedule.utils';
 import { AttendanceEditor } from '../../attendance/AttendanceEditor/AttendanceEditor';
@@ -37,6 +37,7 @@ import {
   formatIstanbulDateTime, formatIstanbulTime, instantToIstanbulCalendarDateTime,
   instantToIstanbulPickerDate, istanbulWallClockToInstant, istanbulWallClockToIso,
 } from '../../../shared/time/istanbul-date-time';
+import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
 
 const initialValues = {
   course_id: '', class_id: '', teacher_id: '', start_time: null, end_time: null,
@@ -96,11 +97,12 @@ export function SchedulesPage() {
     ...visibleRange,
     ...(isAdmin ? { course_id: filters.courseId || undefined, class_id: filters.classId || undefined, teacher_id: filters.teacherId || undefined } : {}),
   };
-  const schedulesQuery = useQuery({
+  const schedulesQueryOptions = {
     queryKey: queryKeys.schedules.list(scheduleParams),
     queryFn: () => schedulesApi.getAll(scheduleParams),
     placeholderData: keepPreviousData,
-  });
+  };
+  const schedulesQuery = useQuery(schedulesQueryOptions);
   const detailQuery = useQuery({
     queryKey: queryKeys.schedules.detail(editingId),
     queryFn: () => schedulesApi.getById(editingId),
@@ -275,7 +277,10 @@ export function SchedulesPage() {
     else setIsEditing(false);
   }
 
-  if (schedulesQuery.isLoading || (isAdmin && lookupsQuery.isLoading)) return <PageLoader />;
+  useSuspendingQueries([
+    { query: schedulesQuery, options: schedulesQueryOptions },
+    { query: lookupsQuery, options: getLookupsQueryOptions(isAdmin) },
+  ]);
   if ((schedulesQuery.isError && !schedulesQuery.data) || (isAdmin && lookupsQuery.isError)) return <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(schedulesQuery.error || lookupsQuery.error)}</Alert>;
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const filterControls = <ScheduleFilters filters={filters} setFilters={setFilters} courseOptions={courseOptions} classOptions={classOptions} teacherOptions={teacherOptions} t={t} />;

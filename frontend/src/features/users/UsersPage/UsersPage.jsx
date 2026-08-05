@@ -15,13 +15,14 @@ import { getErrorMessage } from '../../../shared/api/api-client';
 import { notifyError, notifySuccess } from '../../../shared/notifications/notifications';
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
-import { useLookups } from '../../lookups/use-lookups';
+import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { usersApi } from '../users.api';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { UserFilters } from '../UserFilters/UserFilters';
 import { UserForm } from '../UserForm/UserForm';
 import { UserList } from '../UserList/UserList';
+import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
 
 const initialValues = { role_id: '', class_id: '', name: '', email: '', password: '', is_active: true };
 
@@ -37,11 +38,12 @@ export function UsersPage() {
   const roles = lookupsQuery.data?.roles;
   const classes = lookupsQuery.data?.classes;
   const queryParams = Object.fromEntries(searchParams.entries());
-  const usersQuery = useQuery({
+  const usersQueryOptions = {
     queryKey: queryKeys.users.list(queryParams),
     queryFn: () => usersApi.getPage(queryParams),
     placeholderData: keepPreviousData,
-  });
+  };
+  const usersQuery = useQuery(usersQueryOptions);
   const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId) });
   const form = useForm({
     initialValues,
@@ -101,7 +103,10 @@ export function UsersPage() {
   function openEdit(id) { setEditingId(id); setOpened(true); }
   function confirmDelete(user) { openAppConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) }); }
 
-  if (usersQuery.isLoading || lookupsQuery.isLoading) return <PageLoader />;
+  useSuspendingQueries([
+    { query: usersQuery, options: usersQueryOptions },
+    { query: lookupsQuery, options: getLookupsQueryOptions() },
+  ]);
   if ((usersQuery.isError && !usersQuery.data) || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
   const pageData = usersQuery.data;
 
