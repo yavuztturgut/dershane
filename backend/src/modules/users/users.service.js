@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 const usersRepository = require('./users.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
+const createHttpError = require('../../utils/create-http-error');
 const authStateCache = require('../auth/auth-state-cache');
 
 const optionRoles = new Set(['student', 'teacher']);

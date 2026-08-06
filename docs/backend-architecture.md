@@ -14,7 +14,7 @@
 - Follow the dependency flow `route -> controller -> service -> repository`. Do not access PostgreSQL from routes or controllers.
 - Routes define endpoint paths and middleware order. Controllers translate HTTP input and service output without owning business rules.
 - Services own validation, authorization-sensitive domain rules and response shaping. Repositories own SQL and database transactions.
-- Keep cross-cutting HTTP middleware in `backend/src/http/middleware`, database code in `backend/src/infrastructure/database`, and cross-domain code in the named `backend/src/shared/{errors,time,security}` areas.
+- Keep cross-cutting HTTP middleware in `backend/src/middleware`, database code in `backend/src/database`, and small cross-domain helpers in `backend/src/utils`.
 
 ## Application and Errors
 
@@ -45,9 +45,9 @@
 
 ## Database
 
-- Use the shared pool from `backend/src/infrastructure/database/pool.js`. Keep SQL parameterized and return only fields required by the service or API.
+- Use the shared pool from `backend/src/database/pool.js`. Keep SQL parameterized and return only fields required by the service or API.
 - Use explicit transactions for multi-row or multi-step atomic operations, including attendance upserts and password-reset token consumption.
-- Use `backend/src/infrastructure/database/create.sql` for a fresh database. Apply later changes with `npm run migrate`; migration files run in filename order and are recorded in `schema_migrations`.
+- Use `backend/src/database/create.sql` for a fresh database. Apply later changes with `npm run migrate`; migration files run in filename order and are recorded in `schema_migrations`.
 - Preserve database constraints for normalized class and course names, schedule time ordering, foreign-key integrity, attendance status values and one attendance record per student per schedule.
 
 ## Tests

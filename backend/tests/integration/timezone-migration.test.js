@@ -6,8 +6,8 @@ const { randomUUID } = require('node:crypto');
 const { Client } = require('pg');
 
 const connectionString = process.env.TEST_DATABASE_URL;
-const migrationPath = path.join(__dirname, '..', '..', 'src', 'infrastructure', 'database', 'migrations', '20260804_schedule_times_istanbul_timestamptz.sql');
-const createPath = path.join(__dirname, '..', '..', 'src', 'infrastructure', 'database', 'create.sql');
+const migrationPath = path.join(__dirname, '..', '..', 'src', 'database', 'migrations', '20260804_schedule_times_istanbul_timestamptz.sql');
+const createPath = path.join(__dirname, '..', '..', 'src', 'database', 'create.sql');
 
 test('fresh schema stores schedule timestamps as timestamptz', () => {
     const createSql = fs.readFileSync(createPath, 'utf8');

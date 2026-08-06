@@ -1,5 +1,5 @@
 const rolesRepository = require('./roles.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
+const createHttpError = require('../../utils/create-http-error');
 
 async function getRoles() {
     return rolesRepository.findAllRoles();

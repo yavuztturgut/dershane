@@ -1,5 +1,5 @@
 const coursesRepository = require('./courses.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
+const createHttpError = require('../../utils/create-http-error');
 
 async function getCourses() {
     return coursesRepository.findAllCourses();

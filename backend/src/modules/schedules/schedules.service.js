@@ -1,6 +1,6 @@
 const schedulesRepository = require('./schedules.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
-const { parseIstanbulDateTime } = require('../../shared/time/istanbul-date-time');
+const createHttpError = require('../../utils/create-http-error');
+const { parseIstanbulDateTime } = require('../../utils/istanbul-date-time');
 
 function normalizeRequiredTimes(data) {
     const start_time = parseIstanbulDateTime(data.start_time);

@@ -1,5 +1,5 @@
 const classesRepository = require('./classes.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
+const createHttpError = require('../../utils/create-http-error');
 
 async function getClasses() {
     return classesRepository.findAllClasses();

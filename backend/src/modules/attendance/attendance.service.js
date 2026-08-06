@@ -1,6 +1,6 @@
 const attendanceRepository = require('./attendance.repository');
-const createHttpError = require('../../shared/errors/create-http-error');
-const { formatIstanbulDateKey } = require('../../shared/time/istanbul-date-time');
+const createHttpError = require('../../utils/create-http-error');
+const { formatIstanbulDateKey } = require('../../utils/istanbul-date-time');
 
 const statuses = new Set(['present', 'absent', 'late', 'excused']);
 

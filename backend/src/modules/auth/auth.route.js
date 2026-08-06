@@ -4,7 +4,7 @@ const router = express.Router();
 const authController = require('./auth.controller');
 const authMiddleware = require('../../middleware/auth-middleware');
 const asyncHandler = require('../../middleware/async-handler');
-const createRateLimit = require('../../shared/security/rate-limit');
+const createRateLimit = require('../../middleware/rate-limit');
 
 const forgotIpLimit = createRateLimit({ windowMs: 15 * 60 * 1000, limit: 5 });
 const forgotEmailLimit = createRateLimit({

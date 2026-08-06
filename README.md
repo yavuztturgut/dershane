@@ -83,9 +83,9 @@ Proje, React tabanlı responsive bir web arayüzü ile Node.js ve Express üzeri
 │   │   ├── app.js
 │   │   ├── server.js
 │   │   ├── modules/<feature>/  # Route, controller, service, repository ve unit test
-│   │   ├── infrastructure/database/
-│   │   ├── http/middleware/
-│   │   └── shared/{errors,time,security}/
+│   │   ├── database/
+│   │   ├── middleware/
+│   │   └── utils/
 │   └── tests/integration/
 ├── frontend/
 │   ├── src/
@@ -174,10 +174,10 @@ VITE_API_URL=http://localhost:3000/api
 
 ### 4. Veritabanını hazırlayın
 
-Yeni bir kurulumda önce PostgreSQL veritabanını oluşturun, ardından `backend/src/infrastructure/database/create.sql` dosyasını çalıştırın. Örneğin `psql` ile:
+Yeni bir kurulumda önce PostgreSQL veritabanını oluşturun, ardından `backend/src/database/create.sql` dosyasını çalıştırın. Örneğin `psql` ile:
 
 ```bash
-psql -d dershane -f backend/src/infrastructure/database/create.sql
+psql -d dershane -f backend/src/database/create.sql
 ```
 
 Uygulamanın kullandığı sabit sistem rollerini ekleyin:
