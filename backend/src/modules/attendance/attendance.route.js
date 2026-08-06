@@ -1,6 +1,6 @@
 const express = require('express');
-const authMiddleware = require('../../http/middleware/auth-middleware');
-const asyncHandler = require('../../http/middleware/async-handler');
+const authMiddleware = require('../../middleware/auth-middleware');
+const asyncHandler = require('../../middleware/async-handler');
 const attendanceController = require('./attendance.controller');
 
 const router = express.Router();

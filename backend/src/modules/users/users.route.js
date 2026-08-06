@@ -2,9 +2,9 @@ const express = require('express');
 const router = express.Router();
 
 const usersController = require('./users.controller');
-const authMiddleware = require('../../http/middleware/auth-middleware');
-const requireRole = require('../../http/middleware/role-middleware');
-const asyncHandler = require('../../http/middleware/async-handler');
+const authMiddleware = require('../../middleware/auth-middleware');
+const requireRole = require('../../middleware/role-middleware');
+const asyncHandler = require('../../middleware/async-handler');
 
 router.get('/', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUsers));
 router.get('/options', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUserOptions));

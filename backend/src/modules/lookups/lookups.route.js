@@ -1,7 +1,7 @@
 const express = require('express');
-const authMiddleware = require('../../http/middleware/auth-middleware');
-const requireRole = require('../../http/middleware/role-middleware');
-const asyncHandler = require('../../http/middleware/async-handler');
+const authMiddleware = require('../../middleware/auth-middleware');
+const requireRole = require('../../middleware/role-middleware');
+const asyncHandler = require('../../middleware/async-handler');
 const lookupsController = require('./lookups.controller');
 
 const router = express.Router();

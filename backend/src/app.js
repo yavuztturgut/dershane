@@ -10,7 +10,7 @@ const scheduleRoutes = require('./modules/schedules/schedules.route');
 const dashboardRoutes = require('./modules/dashboard/dashboard.route');
 const attendanceRoutes = require('./modules/attendance/attendance.route');
 const lookupRoutes = require('./modules/lookups/lookups.route');
-const errorMiddleware = require('./http/middleware/error-middleware');
+const errorMiddleware = require('./middleware/error-middleware');
 const app = express();
 
 const allowedOrigins = new Set([

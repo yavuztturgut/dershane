@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const authRepository = require('../../modules/auth/auth.repository');
-const authStateCache = require('../../modules/auth/auth-state-cache');
+const authRepository = require('../modules/auth/auth.repository');
+const authStateCache = require('../modules/auth/auth-state-cache');
 
 const authMiddleware = async (req, res, next) => {
     const token = req.cookies.access_token;

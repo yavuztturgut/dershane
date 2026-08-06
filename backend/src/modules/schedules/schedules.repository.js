@@ -1,4 +1,4 @@
-const pool = require('../../infrastructure/database/pool');
+const pool = require('../../database/pool');
 
 function buildScheduleSelect() {
     return `
