@@ -15,7 +15,6 @@ const app = express();
 
 const allowedOrigins = new Set([
     'http://localhost:5173',
-    'https://dershane-frontend-ten.vercel.app',
     process.env.CLIENT_URL?.replace(/\/$/, '')
 ].filter(Boolean));
 
