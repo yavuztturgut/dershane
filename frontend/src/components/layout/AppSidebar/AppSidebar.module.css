@@ -1,0 +1,12 @@
+.collapsedActive {
+  padding-inline-end: 0.75rem;
+  border-start-end-radius: 0;
+  border-end-end-radius: 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 0.75rem) 0,
+    100% 50%,
+    calc(100% - 0.75rem) 100%,
+    0 100%
+  );
+}

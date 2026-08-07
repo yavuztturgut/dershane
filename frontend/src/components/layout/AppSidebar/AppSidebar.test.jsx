@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const useAuthMock = vi.fn();
 vi.mock('../../../features/auth/use-auth', () => ({ useAuth: () => useAuthMock() }));
 import { AppSidebar } from './AppSidebar';
+import styles from './AppSidebar.module.css';
 
 function renderSidebar(user, collapsed = false) {
   useAuthMock.mockReturnValue({ user, logout: vi.fn() });
@@ -45,5 +46,17 @@ describe('AppSidebar role visibility', () => {
     expect(within(actions).getByRole('button', { name: 'Language' })).toBeInTheDocument();
     expect(within(actions).getByRole('button', { name: 'Dark' })).toBeInTheDocument();
     expect(within(actions).getByRole('button', { name: 'Log out' })).toBeInTheDocument();
+  });
+  it('adds the pointed active shape only to the selected link when collapsed', () => {
+    renderSidebar({ name: 'Admin', role_name: 'admin' }, true);
+    const links = screen.getAllByRole('link');
+    expect(links[0]).toHaveAttribute('data-active', 'true');
+    expect(links[0]).toHaveClass(styles.collapsedActive);
+    expect(links.slice(1).every((link) => !link.classList.contains(styles.collapsedActive))).toBe(true);
+  });
+
+  it('keeps the regular active shape when expanded', () => {
+    renderSidebar({ name: 'Admin', role_name: 'admin' });
+    expect(screen.getByRole('link', { name: 'Dashboard' })).not.toHaveClass(styles.collapsedActive);
   });
 });

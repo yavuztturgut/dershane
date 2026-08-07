@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../../features/auth/use-auth';
 import { ThemeToggle } from '../../ui/ThemeToggle/ThemeToggle';
 import { LanguageToggle } from '../../ui/LanguageToggle/LanguageToggle';
+import styles from './AppSidebar.module.css';
 
 const adminItems = [
   { to: '/', key: 'dashboard', icon: IconDashboard },
@@ -61,7 +62,7 @@ export function AppSidebar({ collapsed, onToggle, onNavigate }) {
             leftSection={<Icon size={19} />}
             active={location.pathname === to}
             onClick={onNavigate}
-            className="mb-1 min-h-11 rounded-lg"
+            className={`mb-1 min-h-11 rounded-lg ${collapsed && location.pathname === to ? styles.collapsedActive : ''}`}
           />
         ))}
       </div>
