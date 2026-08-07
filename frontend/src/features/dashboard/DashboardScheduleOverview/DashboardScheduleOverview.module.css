@@ -1,14 +1,7 @@
-.grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(20rem, 0.65fr);
-  gap: var(--mantine-spacing-md);
-  align-items: start;
-}
-
 .surface {
   display: grid;
-  gap: var(--mantine-spacing-md);
-  padding: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-sm);
+  padding: var(--mantine-spacing-md);
   min-width: 0;
 }
 
@@ -87,17 +80,7 @@
   color: var(--mantine-color-green-text);
 }
 
-@media (max-width: 64rem) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-
 @media (max-width: 36rem) {
-  .surface {
-    padding: var(--mantine-spacing-md);
-  }
-
   .row {
     grid-template-columns: 1fr auto;
   }

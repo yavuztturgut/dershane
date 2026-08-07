@@ -1,6 +1,20 @@
 .page {
   display: grid;
-  gap: var(--mantine-spacing-lg);
+  gap: var(--mantine-spacing-md);
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr);
+  gap: var(--mantine-spacing-md);
+  align-items: start;
+}
+
+.primaryColumn,
+.secondaryColumn {
+  display: grid;
+  min-width: 0;
+  gap: var(--mantine-spacing-md);
 }
 
 .systemSummary {
@@ -12,4 +26,32 @@
   margin: 0;
   font-size: var(--mantine-font-size-lg);
   line-height: 1.3;
+}
+
+@media (max-width: 64rem) {
+  .contentGrid {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .primaryColumn,
+  .secondaryColumn {
+    display: contents;
+  }
+
+  .todaySchedule {
+    order: 1;
+  }
+
+  .attentionSchedule {
+    order: 2;
+  }
+
+  .attendanceChart {
+    order: 3;
+  }
+
+  .systemSummary {
+    order: 4;
+  }
 }

@@ -86,14 +86,6 @@ async function updateProfile(userId, data) {
         throw createHttpError('Valid name and email are required', 400, 'INVALID_PROFILE');
     }
 
-    authStateCache.set(user.id, {
-        id: user.id,
-        role_id: user.role_id,
-        role_name: user.role_name,
-        class_id: user.class_id,
-        is_active: user.is_active,
-        token_version: user.token_version
-    });
     await authRepository.updateProfile(userId, { name, email });
     return getProfile(userId);
 }

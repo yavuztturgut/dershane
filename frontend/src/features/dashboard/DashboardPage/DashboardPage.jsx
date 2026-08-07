@@ -20,7 +20,7 @@ import { useAuth } from '../../auth/use-auth';
 import { AttendanceCompletionChart } from '../AttendanceCompletionChart/AttendanceCompletionChart';
 import { DashboardMetricGrid } from '../DashboardMetricGrid/DashboardMetricGrid';
 import { DashboardQuickActions } from '../DashboardQuickActions/DashboardQuickActions';
-import { DashboardScheduleOverview } from '../DashboardScheduleOverview/DashboardScheduleOverview';
+import { AttentionScheduleCard, TodayScheduleCard } from '../DashboardScheduleOverview/DashboardScheduleOverview';
 import { dashboardApi } from '../dashboard.api';
 import styles from './DashboardPage.module.css';
 
@@ -63,12 +63,19 @@ export function DashboardPage() {
     <div className={styles.page}>
       <DashboardMetricGrid metrics={operationalMetrics} values={data.today} t={t} />
       <DashboardQuickActions schedules={data.todaySchedules} locale={i18n.language} t={t} />
-      <DashboardScheduleOverview schedules={data.todaySchedules} locale={i18n.language} t={t} />
-      <AttendanceCompletionChart data={data.weeklyAttendance} locale={i18n.language} t={t} />
-      <section aria-labelledby="system-summary-title" className={styles.systemSummary}>
-        <h2 id="system-summary-title" className={styles.sectionTitle}>{t('dashboardOverview.systemSummary')}</h2>
-        <DashboardMetricGrid metrics={systemMetrics} values={data} t={t} compact />
-      </section>
+      <div className={styles.contentGrid}>
+        <div className={styles.primaryColumn}>
+          <div className={styles.todaySchedule}><TodayScheduleCard schedules={data.todaySchedules} locale={i18n.language} t={t} /></div>
+          <div className={styles.attendanceChart}><AttendanceCompletionChart data={data.weeklyAttendance} locale={i18n.language} t={t} /></div>
+        </div>
+        <div className={styles.secondaryColumn}>
+          <div className={styles.attentionSchedule}><AttentionScheduleCard schedules={data.todaySchedules} locale={i18n.language} t={t} /></div>
+          <section aria-labelledby="system-summary-title" className={styles.systemSummary}>
+            <h2 id="system-summary-title" className={styles.sectionTitle}>{t('dashboardOverview.systemSummary')}</h2>
+            <DashboardMetricGrid metrics={systemMetrics} values={data} t={t} compact />
+          </section>
+        </div>
+      </div>
     </div>
   </PageContainer>;
 }

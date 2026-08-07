@@ -5,7 +5,8 @@
 }
 
 .compact {
-  opacity: 0.92;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-sm);
 }
 
 @media (max-width: 62rem) {
@@ -15,7 +16,8 @@
 }
 
 @media (max-width: 36rem) {
-  .grid {
+  .grid,
+  .compact {
     grid-template-columns: 1fr;
   }
 }

@@ -1,6 +1,6 @@
 .surface {
   display: grid;
-  padding: var(--mantine-spacing-lg);
+  padding: var(--mantine-spacing-md);
 }
 
 .toggle {
@@ -25,8 +25,8 @@
 
 .headerIcon {
   display: grid;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 2.5rem;
+  height: 2.5rem;
   place-items: center;
   border-radius: var(--mantine-radius-md);
   background: var(--mantine-primary-color-light);
@@ -174,10 +174,6 @@
 }
 
 @media (max-width: 36rem) {
-  .surface {
-    padding: var(--mantine-spacing-md);
-  }
-
   .actions {
     grid-template-columns: 1fr;
   }

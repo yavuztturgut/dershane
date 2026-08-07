@@ -50,3 +50,27 @@ test('production password reset URLs require explicit client configuration', () 
         if (previousResetUrl === undefined) delete process.env.RESET_URL_BASE; else process.env.RESET_URL_BASE = previousResetUrl;
     }
 });
+
+test('profile updates normalize input and return the refreshed profile', async (t) => {
+    const originalUpdateProfile = repository.updateProfile;
+    const originalFindProfileById = repository.findProfileById;
+    t.after(() => {
+        repository.updateProfile = originalUpdateProfile;
+        repository.findProfileById = originalFindProfileById;
+    });
+
+    let update;
+    repository.updateProfile = async (id, data) => { update = { id, data }; };
+    repository.findProfileById = async (id) => ({ id, name: 'Yavuz Admin 2', email: 'yavuz@example.com' });
+
+    const result = await service.updateProfile(7, {
+        name: '  Yavuz Admin 2  ',
+        email: 'YAVUZ@EXAMPLE.COM',
+    });
+
+    assert.deepEqual(update, {
+        id: 7,
+        data: { name: 'Yavuz Admin 2', email: 'yavuz@example.com' },
+    });
+    assert.deepEqual(result, { id: 7, name: 'Yavuz Admin 2', email: 'yavuz@example.com' });
+});
