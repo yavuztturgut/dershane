@@ -15,17 +15,16 @@ async function findSchedule(id) {
 
 async function findScheduleAttendance(scheduleId, studentId) {
     const params = [scheduleId];
-    const studentCondition = studentId ? `AND u.id = $${params.push(studentId)}` : '';
+    const studentCondition = studentId ? `AND student.id = $${params.push(studentId)}` : '';
     const result = await pool.query(
-        `SELECT u.id AS student_id, u.name AS student_name, u.email,
+        `SELECT student.id AS student_id, student.name AS student_name, student.email,
                 ar.status, ar.updated_at
-         FROM users u
-         JOIN roles r ON r.id = u.role_id AND r.name = 'student'
-         LEFT JOIN attendance_records ar ON ar.student_id = u.id AND ar.schedule_id = $1
-         WHERE u.class_id = (SELECT class_id FROM schedules WHERE id = $1)
-           AND u.is_active = true
+         FROM schedule_students roster
+         JOIN users student ON student.id = roster.student_id
+         LEFT JOIN attendance_records ar ON ar.student_id = student.id AND ar.schedule_id = roster.schedule_id
+         WHERE roster.schedule_id = $1
            ${studentCondition}
-         ORDER BY u.name ASC`,
+         ORDER BY student.name ASC`,
         params
     );
     return result.rows;
@@ -55,7 +54,7 @@ async function upsertAttendance(scheduleId, records, recordedBy) {
 
 async function findStudentAttendance(studentId, filters) {
     const params = [studentId];
-    const conditions = ['s.class_id = u.class_id', 's.end_time <= NOW()'];
+    const conditions = ['roster.student_id = u.id', 'roster.schedule_id = s.id', 's.end_time <= NOW()'];
     if (filters.start) {
         params.push(filters.start);
         conditions.push(`s.end_time >= ($${params.length}::date::timestamp AT TIME ZONE 'Europe/Istanbul')`);
@@ -68,6 +67,7 @@ async function findStudentAttendance(studentId, filters) {
         `SELECT s.id AS schedule_id, s.start_time, s.end_time, co.name AS course_name,
                 cl.name AS class_name, t.name AS teacher_name, ar.status
          FROM users u
+         JOIN schedule_students roster ON roster.student_id = u.id
          JOIN schedules s ON ${conditions.join(' AND ')}
          JOIN courses co ON co.id = s.course_id
          JOIN classes cl ON cl.id = s.class_id
@@ -126,11 +126,9 @@ function dailyReportFilters(filters, params) {
     if (filters.student_id) {
         params.push(filters.student_id);
         conditions.push(`EXISTS (
-            SELECT 1 FROM users selected_student
-            JOIN roles selected_role ON selected_role.id = selected_student.role_id AND selected_role.name = 'student'
-            WHERE selected_student.id = $${params.length}
-              AND selected_student.class_id = s.class_id
-              AND selected_student.is_active = true
+            SELECT 1 FROM schedule_students selected_roster
+            WHERE selected_roster.schedule_id = s.id
+              AND selected_roster.student_id = $${params.length}
         )`);
     }
     if (filters.start) {
@@ -190,17 +188,16 @@ async function findDailyReport(filters) {
          JOIN classes cl ON cl.id = s.class_id
          JOIN users teacher ON teacher.id = s.teacher_id
          LEFT JOIN LATERAL (
-             SELECT COUNT(student.id)::INTEGER AS student_count,
+             SELECT COUNT(roster.student_id)::INTEGER AS student_count,
                     COUNT(ar.id)::INTEGER AS recorded_count,
                     COUNT(*) FILTER (WHERE ar.status = 'present')::INTEGER AS present_count,
                     COUNT(*) FILTER (WHERE ar.status = 'absent')::INTEGER AS absent_count,
                     COUNT(*) FILTER (WHERE ar.status = 'late')::INTEGER AS late_count,
                     COUNT(*) FILTER (WHERE ar.status = 'excused')::INTEGER AS excused_count
-             FROM users student
-             JOIN roles student_role ON student_role.id = student.role_id AND student_role.name = 'student'
-             LEFT JOIN attendance_records ar ON ar.schedule_id = s.id AND ar.student_id = student.id
-             WHERE student.class_id = s.class_id AND student.is_active = true
-               ${selectedStudentParam ? `AND student.id = $${selectedStudentParam}` : ''}
+             FROM schedule_students roster
+             LEFT JOIN attendance_records ar ON ar.schedule_id = roster.schedule_id AND ar.student_id = roster.student_id
+             WHERE roster.schedule_id = s.id
+               ${selectedStudentParam ? `AND roster.student_id = $${selectedStudentParam}` : ''}
          ) stats ON true
          WHERE ${scheduleConditions.join(' AND ')}
            AND (s.start_time AT TIME ZONE 'Europe/Istanbul')::date = ANY($${scheduleParams.length}::date[])

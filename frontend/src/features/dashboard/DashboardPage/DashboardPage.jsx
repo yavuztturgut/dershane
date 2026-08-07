@@ -1,24 +1,74 @@
-import { Alert, Button, SimpleGrid } from '@mantine/core';
-import { IconAlertCircle, IconBook2, IconCalendarEvent, IconSchool, IconUsers } from '@tabler/icons-react';
+import { Alert, Button } from '@mantine/core';
+import {
+  IconAlertCircle,
+  IconAlertTriangle,
+  IconBook2,
+  IconCalendarCheck,
+  IconCalendarEvent,
+  IconClock,
+  IconSchool,
+  IconUsers,
+} from '@tabler/icons-react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useAuth } from '../../auth/use-auth';
-import { dashboardApi } from '../dashboard.api';
+import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
+import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { cachePolicy } from '../../../shared/query/cache-policy';
 import { queryKeys } from '../../../shared/query/query-keys';
-import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
-import { StatCard } from '../../../components/ui/StatCard/StatCard';
-import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
 import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { useAuth } from '../../auth/use-auth';
+import { AttendanceCompletionChart } from '../AttendanceCompletionChart/AttendanceCompletionChart';
+import { DashboardMetricGrid } from '../DashboardMetricGrid/DashboardMetricGrid';
+import { DashboardQuickActions } from '../DashboardQuickActions/DashboardQuickActions';
+import { DashboardScheduleOverview } from '../DashboardScheduleOverview/DashboardScheduleOverview';
+import { dashboardApi } from '../dashboard.api';
+import styles from './DashboardPage.module.css';
 
-const resources = [['users', 'totalUsers', IconUsers, 'blue'], ['courses', 'totalCourses', IconBook2, 'indigo'], ['classes', 'totalClasses', IconSchool, 'cyan'], ['schedules', 'totalSchedules', IconCalendarEvent, 'violet']];
+const operationalMetrics = [
+  ['lessons', 'dashboardOverview.todayLessons', IconCalendarEvent, 'blue'],
+  ['remaining', 'dashboardOverview.remainingLessons', IconClock, 'orange'],
+  ['attendanceCompleted', 'dashboardOverview.completedAttendance', IconCalendarCheck, 'green'],
+  ['attendanceMissing', 'dashboardOverview.missingAttendance', IconAlertTriangle, 'red'],
+];
+
+const systemMetrics = [
+  ['users', 'totalUsers', IconUsers, 'blue'],
+  ['courses', 'totalCourses', IconBook2, 'indigo'],
+  ['classes', 'totalClasses', IconSchool, 'cyan'],
+  ['schedules', 'totalSchedules', IconCalendarEvent, 'violet'],
+];
 
 export function DashboardPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
-  const queryOptions = { queryKey: queryKeys.dashboard.summary, queryFn: dashboardApi.getSummary, staleTime: cachePolicy.dashboard };
+  const queryOptions = {
+    queryKey: queryKeys.dashboard.summary,
+    queryFn: dashboardApi.getSummary,
+    staleTime: cachePolicy.dashboard,
+  };
   const query = useQuery(queryOptions);
   useSuspendingQueries([{ query, options: queryOptions }]);
-  if (query.isError) return <Alert icon={<IconAlertCircle size={18} />} color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => query.refetch()}>{t('retry')}</Button></Alert>;
-  return <PageContainer><PageHeader title={t('welcome', { name: user.name })} description={t('dashboardDescription')} /><SimpleGrid cols={{ base: 1, xs: 2, lg: 4 }}>{resources.map(([key, label, icon, color]) => <StatCard key={key} label={t(label)} value={query.data[key]} icon={icon} color={color} />)}</SimpleGrid></PageContainer>;
+
+  if (query.isError) {
+    return <Alert icon={<IconAlertCircle size={18} />} color="red">
+      {t('errors.GENERIC')}
+      <Button variant="subtle" size="compact-sm" onClick={() => query.refetch()}>{t('retry')}</Button>
+    </Alert>;
+  }
+
+  const data = query.data;
+
+  return <PageContainer>
+    <PageHeader title={t('welcome', { name: user.name })} description={t('dashboardDescription')} />
+    <div className={styles.page}>
+      <DashboardMetricGrid metrics={operationalMetrics} values={data.today} t={t} />
+      <DashboardQuickActions schedules={data.todaySchedules} locale={i18n.language} t={t} />
+      <DashboardScheduleOverview schedules={data.todaySchedules} locale={i18n.language} t={t} />
+      <AttendanceCompletionChart data={data.weeklyAttendance} locale={i18n.language} t={t} />
+      <section aria-labelledby="system-summary-title" className={styles.systemSummary}>
+        <h2 id="system-summary-title" className={styles.sectionTitle}>{t('dashboardOverview.systemSummary')}</h2>
+        <DashboardMetricGrid metrics={systemMetrics} values={data} t={t} compact />
+      </section>
+    </div>
+  </PageContainer>;
 }

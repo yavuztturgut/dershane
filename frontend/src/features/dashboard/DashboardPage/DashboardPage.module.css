@@ -1,0 +1,15 @@
+.page {
+  display: grid;
+  gap: var(--mantine-spacing-lg);
+}
+
+.systemSummary {
+  display: grid;
+  gap: var(--mantine-spacing-sm);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: var(--mantine-font-size-lg);
+  line-height: 1.3;
+}

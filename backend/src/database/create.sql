@@ -68,4 +68,12 @@ CREATE TABLE attendance_records (
     UNIQUE (schedule_id, student_id)
 );
 
+CREATE TABLE schedule_students (
+    schedule_id INTEGER NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (schedule_id, student_id)
+);
+
 CREATE INDEX schedules_time_range_idx ON schedules (start_time, end_time);
+CREATE INDEX schedule_students_student_id_idx ON schedule_students (student_id, schedule_id);

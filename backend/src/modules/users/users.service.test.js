@@ -41,3 +41,9 @@ test('user options only allow supported roles and normalize class filters', asyn
         (error) => error.errorCode === 'INVALID_USER_OPTION_ROLE'
     );
 });
+
+test('student deletion delegates to history-preserving deactivation', async () => {
+    repository.deleteUserPreservingHistory = async () => ({ id: 7, is_active: false });
+    const user = await service.deleteUser(7);
+    assert.deepEqual(user, { id: 7, is_active: false });
+});

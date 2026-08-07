@@ -9,6 +9,8 @@
     "dev": "npm run dev --workspace backend",
     "start": "npm run start --workspace backend",
     "migrate": "npm run migrate --workspace backend",
+    "migrate:status": "npm run migrate:status --workspace backend",
+    "migrate:production": "npm run migrate:production --workspace backend",
     "test": "npm run test:unit && npm run test:frontend",
     "test:unit": "npm test --workspace backend",
     "test:integration": "npm run test:integration --workspace backend",

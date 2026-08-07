@@ -26,6 +26,16 @@ test('admin can save valid attendance after the teacher lock', async () => {
     assert.deepEqual(receivedFilters, [undefined, 2]);
 });
 
+test('attendance rejects students outside the frozen lesson roster', async () => {
+    repository.findSchedule = async () => ({ id: 1, teacher_id: 7, start_time: new Date(Date.now() - 60_000), end_time: new Date(Date.now() + 60_000) });
+    repository.findScheduleAttendance = async () => [{ student_id: 2, student_name: 'Roster student' }];
+
+    await assert.rejects(
+        service.saveScheduleAttendance(1, [{ student_id: 3, status: 'present' }], { id: 1, role_name: 'admin' }),
+        (error) => error.errorCode === 'INVALID_ATTENDANCE_STUDENT'
+    );
+});
+
 test('admin daily report defaults to seven calendar days and groups lessons without splitting a day', async () => {
     let receivedFilters;
     repository.findDailyReport = async (filters) => {

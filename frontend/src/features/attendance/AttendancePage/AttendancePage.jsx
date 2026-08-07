@@ -3,6 +3,7 @@ import { DateInput } from '@mantine/dates';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
 import { useAuth } from '../../auth/use-auth';
@@ -37,6 +38,8 @@ const countColors = { present: 'green', absent: 'red', late: 'orange', excused: 
 
 export function AttendancePage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const routeNavigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user.role_name === 'admin';
   const [filters, setFilters] = useState({ class_id: '', student_id: '', start: null, end: null });
@@ -80,6 +83,18 @@ export function AttendancePage() {
     setDirtyLessons({});
     initializedView.current = viewKey;
   }, [isAdmin, query.data, query.isPlaceholderData, viewKey]);
+
+  useEffect(() => {
+    const action = location.state?.dashboardAction;
+    if (!isAdmin || action?.type !== 'open-attendance' || !query.data || query.isPlaceholderData) return;
+    const scheduleId = String(action.scheduleId);
+    const day = query.data.days.find((item) => item.schedules.some((lesson) => String(lesson.schedule_id) === scheduleId));
+    if (day) {
+      setOpenDays((current) => current.includes(day.date) ? current : [...current, day.date]);
+      setOpenLessons((current) => current.includes(scheduleId) ? current : [...current, scheduleId]);
+    }
+    routeNavigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [isAdmin, location.pathname, location.search, location.state, query.data, query.isPlaceholderData, routeNavigate]);
 
   function confirmDiscard(onConfirm) {
     openAppConfirmModal({

@@ -76,4 +76,5 @@ test('daily attendance SQL derives dates explicitly in Europe/Istanbul', () => {
     const repository = fs.readFileSync(repositoryPath, 'utf8');
     assert.doesNotMatch(repository, /s\.start_time::date/);
     assert.match(repository, /s\.start_time AT TIME ZONE 'Europe\/Istanbul'/);
+    assert.match(repository, /FROM schedule_students roster/);
 });

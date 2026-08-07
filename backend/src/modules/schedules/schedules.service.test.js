@@ -6,7 +6,7 @@ const service = require('./schedules.service');
 test('createSchedule accepts adjacent non-conflicting lessons', async () => {
     repository.isActiveTeacher = async () => true;
     repository.findConflict = async () => null;
-    repository.insertSchedule = async (data) => ({ id: 1, ...data });
+    repository.insertScheduleWithRoster = async (data) => ({ id: 1, ...data });
     repository.findScheduleByIdForUser = async (id) => ({ id, course_name: 'Math' });
     const result = await service.createSchedule({ course_id: 1, class_id: 2, teacher_id: 3, start_time: '2026-08-03 09:00:00', end_time: '2026-08-03 10:00:00' });
     assert.equal(result.id, 1);
@@ -16,7 +16,7 @@ test('timezone-less schedule values are interpreted as Istanbul wall time', asyn
     let inserted;
     repository.isActiveTeacher = async () => true;
     repository.findConflict = async () => null;
-    repository.insertSchedule = async (data) => { inserted = data; return { id: 1, ...data }; };
+    repository.insertScheduleWithRoster = async (data) => { inserted = data; return { id: 1, ...data }; };
     repository.findScheduleByIdForUser = async (id) => ({ id });
 
     await service.createSchedule({
@@ -32,7 +32,7 @@ test('offset schedule values remain the same absolute instants', async () => {
     let conflictingData;
     repository.isActiveTeacher = async () => true;
     repository.findConflict = async (data) => { conflictingData = data; return null; };
-    repository.insertSchedule = async (data) => ({ id: 1, ...data });
+    repository.insertScheduleWithRoster = async (data) => ({ id: 1, ...data });
     repository.findScheduleByIdForUser = async (id) => ({ id });
 
     await service.createSchedule({
@@ -59,7 +59,7 @@ test('timezone-less schedule values preserve milliseconds', async () => {
     let inserted;
     repository.isActiveTeacher = async () => true;
     repository.findConflict = async () => null;
-    repository.insertSchedule = async (data) => { inserted = data; return { id: 1, ...data }; };
+    repository.insertScheduleWithRoster = async (data) => { inserted = data; return { id: 1, ...data }; };
     repository.findScheduleByIdForUser = async (id) => ({ id });
     await service.createSchedule({ course_id: 1, class_id: 2, teacher_id: 3, start_time: '2026-08-04 12:00:00.123', end_time: '2026-08-04 13:00:00.456' });
     assert.equal(inserted.start_time.toISOString(), '2026-08-04T09:00:00.123Z');
@@ -92,5 +92,17 @@ test('updateSchedule validates the final time range', async () => {
     await assert.rejects(
         service.updateSchedule(1, { end_time: '2026-08-03 08:00:00' }),
         (error) => error.errorCode === 'SCHEDULE_END_BEFORE_START'
+    );
+});
+
+test('started schedules reject class changes that would invalidate the frozen roster', async () => {
+    repository.findScheduleById = async () => ({ id: 1, course_id: 1, class_id: 2, teacher_id: 3, start_time: new Date(Date.now() - 60_000), end_time: new Date(Date.now() + 60_000) });
+    repository.isActiveTeacher = async () => true;
+    repository.findConflict = async () => null;
+    repository.updateScheduleWithRoster = async () => ({ rosterLocked: true });
+
+    await assert.rejects(
+        service.updateSchedule(1, { class_id: 4 }),
+        (error) => error.statusCode === 409 && error.errorCode === 'SCHEDULE_ROSTER_LOCKED'
     );
 });

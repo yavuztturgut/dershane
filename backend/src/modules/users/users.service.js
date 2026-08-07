@@ -39,19 +39,24 @@ async function getUserOptions(query = {}) {
     return usersRepository.findUserOptions({ role, classId });
 }
 
-async function validateUserData(data, isCreate = false) {
+async function validateUserData(data, isCreate = false, existingUser) {
     if (isCreate && (!data.role_id || !data.name || !data.email || !data.password)) {
         throw createHttpError('Missing required fields', 400);
     }
     if (data.password && data.password.length < 8) {
         throw createHttpError('Password must contain at least 8 characters', 400, 'PASSWORD_TOO_SHORT');
     }
-    if (data.role_id) {
-        const roleName = await usersRepository.findRoleNameById(data.role_id);
+    const roleId = data.role_id || existingUser?.role_id;
+    if (roleId) {
+        const roleName = data.role_id
+            ? await usersRepository.findRoleNameById(data.role_id)
+            : existingUser.role_name;
         if (!roleName) throw createHttpError('Invalid role', 400, 'INVALID_REFERENCE');
-        if (roleName === 'student' && !data.class_id) {
+        const classId = data.class_id === undefined ? existingUser?.class_id : data.class_id;
+        if (roleName === 'student' && !classId) {
             throw createHttpError('Student class is required', 400, 'STUDENT_CLASS_REQUIRED');
         }
+        return roleName;
     }
 }
 
@@ -67,28 +72,29 @@ async function getUserById(id) {
 
 async function createUser(data) {
     const { role_id, class_id, name, email, password } = data;
-    await validateUserData(data, true);
+    const roleName = await validateUserData(data, true);
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    return usersRepository.insertUser({
+    return usersRepository.insertUserWithRoster({
         role_id,
         class_id,
         name,
         email,
         password: hashedPassword
-    });
+    }, roleName);
 }
 
 async function updateUser(id, data) {
-    await validateUserData(data);
     const existingUser = await usersRepository.findUserWithPasswordById(id);
 
     if (!existingUser) {
         throw createHttpError('User not found', 404);
     }
 
-    let hashedPassword = existingUser.password;
+    await validateUserData(data, false, existingUser);
+
+    let hashedPassword;
     const passwordChanged = Boolean(data.password);
 
     if (data.password) {
@@ -97,7 +103,7 @@ async function updateUser(id, data) {
 
     const classId = data.class_id === undefined ? existingUser.class_id : data.class_id;
 
-    const user = await usersRepository.updateUserById(id, {
+    const user = await usersRepository.updateUserWithRoster(id, {
         role_id: data.role_id,
         class_id: classId,
         name: data.name,
@@ -111,7 +117,7 @@ async function updateUser(id, data) {
 }
 
 async function deleteUser(id) {
-    const user = await usersRepository.deleteUserById(id);
+    const user = await usersRepository.deleteUserPreservingHistory(id);
 
     if (!user) {
         throw createHttpError('User not found', 404);

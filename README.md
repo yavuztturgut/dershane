@@ -214,10 +214,23 @@ WHERE name = 'admin';
 Mevcut bir veritabanını güncellemek için migration'ları çalıştırın:
 
 ```bash
+npm run migrate:status
 npm run migrate
 ```
 
 Migration dosyaları isim sırasına göre uygulanır; daha önce tamamlanan migration'lar tekrar çalıştırılmaz.
+
+Canlı veritabanı migration'larında bağlantı bilgisini repoya veya kalıcı bir `.env` dosyasına yazmayın. Supabase Direct Connection veya IPv4 gerekiyorsa Session Pooler bağlantısını panoya kopyalayıp PowerShell oturumu boyunca geçici olarak kullanın:
+
+```powershell
+$env:MIGRATION_DATABASE_URL = Get-Clipboard
+npm run migrate:status
+npm run migrate:production
+Remove-Item Env:MIGRATION_DATABASE_URL
+Clear-Clipboard
+```
+
+Production migration'ını yeni backend sürümünü deploy etmeden önce çalıştırın ve öncesinde veritabanı yedeğini doğrulayın. Migration runner hedef hostu gösterir ancak bağlantı parolasını loglamaz.
 
 ### 5. Uygulamayı çalıştırın
 
@@ -249,6 +262,8 @@ Varsayılan geliştirme adresleri:
 | `npm run dev` | Backend'i Nodemon ile geliştirme modunda başlatır. |
 | `npm start` | Backend'i production başlangıç komutuyla çalıştırır. |
 | `npm run migrate` | Uygulanmamış PostgreSQL migration'larını çalıştırır. |
+| `npm run migrate:status` | Veritabanına yazmadan migration durumunu gösterir. |
+| `npm run migrate:production` | `MIGRATION_DATABASE_URL` hedefinde açık production onayıyla migration çalıştırır. |
 | `npm test` | Backend servis ve yardımcı testlerini çalıştırır. |
 
 ### Frontend

@@ -8,6 +8,8 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "migrate": "node src/database/migrate.js",
+    "migrate:status": "node src/database/migrate.js --status",
+    "migrate:production": "node src/database/migrate.js --confirm-production",
     "test": "node --test src/**/*.test.js",
     "test:integration": "node --test tests/integration/*.test.js"
   },

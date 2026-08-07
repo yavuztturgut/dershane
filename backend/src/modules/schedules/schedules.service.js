@@ -50,7 +50,7 @@ async function createSchedule(data) {
     const normalized = normalizeRequiredTimes({ course_id, class_id, teacher_id, start_time, end_time });
     await validateSchedule(normalized);
 
-    const created = await schedulesRepository.insertSchedule({
+    const created = await schedulesRepository.insertScheduleWithRoster({
         course_id,
         class_id,
         teacher_id,
@@ -77,11 +77,14 @@ async function updateSchedule(id, data) {
     const normalized = normalizeRequiredTimes(finalData);
     await validateSchedule(normalized, id);
 
-    await schedulesRepository.updateScheduleById(id, {
+    const updateResult = await schedulesRepository.updateScheduleWithRoster(id, {
         ...data,
         ...(data.start_time !== undefined ? { start_time: normalized.start_time } : {}),
         ...(data.end_time !== undefined ? { end_time: normalized.end_time } : {})
     });
+    if (updateResult.rosterLocked) {
+        throw createHttpError('Class and start time are locked after the lesson starts', 409, 'SCHEDULE_ROSTER_LOCKED');
+    }
     return schedulesRepository.findScheduleByIdForUser(id, { role_name: 'admin' });
 }
 

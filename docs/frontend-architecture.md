@@ -3,9 +3,9 @@
 ## Stack
 
 - React + Vite + JavaScript
-- Mantine UI for accessible components, modals, forms, notifications and loaders
+- Mantine UI and Mantine Charts for accessible components, data visualizations, modals, forms, notifications and loaders
 - Tailwind CSS for responsive layout utilities; no inline `style` or Mantine `sx` props
-- React Router, TanStack Query, Axios, FullCalendar and react-i18next
+- React Router, TanStack Query, Axios, FullCalendar, Recharts and react-i18next
 - Vitest and React Testing Library
 
 ## Folder Rules

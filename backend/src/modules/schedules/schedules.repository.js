@@ -1,4 +1,6 @@
 const pool = require('../../database/pool');
+const { lockClasses, withTransaction } = require('../../database/transaction');
+const rosterRepository = require('../schedule-roster/schedule-roster.repository');
 
 function buildScheduleSelect() {
     return `
@@ -66,7 +68,7 @@ async function findSchedulesForUser(user, filters = {}) {
     return result.rows;
 }
 
-async function findConflict({ teacher_id, class_id, start_time, end_time, excludeId }) {
+async function findConflict({ teacher_id, class_id, start_time, end_time, excludeId }, db = pool) {
     const params = [teacher_id, class_id, start_time, end_time];
     let query = `${buildScheduleSelect()}
         WHERE (s.teacher_id = $1 OR s.class_id = $2)
@@ -77,7 +79,7 @@ async function findConflict({ teacher_id, class_id, start_time, end_time, exclud
         query += ' AND s.id <> $5';
     }
     query += ' ORDER BY s.start_time ASC LIMIT 1';
-    const result = await pool.query(query, params);
+    const result = await db.query(query, params);
     return result.rows[0];
 }
 
@@ -99,17 +101,17 @@ async function findScheduleByIdForUser(id, user) {
     return result.rows[0];
 }
 
-async function findScheduleById(id) {
-    const result = await pool.query(
-        'SELECT * FROM schedules WHERE id = $1',
+async function findScheduleById(id, db = pool, forUpdate = false) {
+    const result = await db.query(
+        `SELECT * FROM schedules WHERE id = $1 ${forUpdate ? 'FOR UPDATE' : ''}`,
         [id]
     );
 
     return result.rows[0];
 }
 
-async function isActiveTeacher(userId) {
-    const result = await pool.query(
+async function isActiveTeacher(userId, db = pool) {
+    const result = await db.query(
         `
           SELECT u.id
           FROM users u
@@ -124,8 +126,8 @@ async function isActiveTeacher(userId) {
     return result.rows.length > 0;
 }
 
-async function insertSchedule(data) {
-    const result = await pool.query(
+async function insertSchedule(data, db = pool) {
+    const result = await db.query(
         `
           INSERT INTO schedules (
               course_id,
@@ -151,8 +153,8 @@ async function insertSchedule(data) {
     return result.rows[0];
 }
 
-async function updateScheduleById(id, data) {
-    const result = await pool.query(
+async function updateScheduleById(id, data, db = pool) {
+    const result = await db.query(
         `
           UPDATE schedules
           SET
@@ -179,8 +181,8 @@ async function updateScheduleById(id, data) {
     return result.rows[0];
 }
 
-async function deleteScheduleById(id) {
-    const result = await pool.query(
+async function deleteScheduleById(id, db = pool) {
+    const result = await db.query(
         `
           DELETE FROM schedules
           WHERE id = $1
@@ -200,6 +202,37 @@ async function deleteScheduleById(id) {
     return result.rows[0];
 }
 
+async function insertScheduleWithRoster(data) {
+    return withTransaction(async (client) => {
+        await lockClasses(client, [data.class_id]);
+        const schedule = await insertSchedule(data, client);
+        await rosterRepository.populateSchedule(client, schedule.id, schedule.class_id);
+        return schedule;
+    });
+}
+
+async function updateScheduleWithRoster(id, data) {
+    return withTransaction(async (client) => {
+        const existing = await findScheduleById(id, client, true);
+        if (!existing) return { schedule: undefined, rosterLocked: false };
+
+        const classChanged = data.class_id !== undefined && Number(data.class_id) !== Number(existing.class_id);
+        const startChanged = data.start_time !== undefined
+            && new Date(data.start_time).getTime() !== new Date(existing.start_time).getTime();
+        if (new Date(existing.start_time).getTime() <= Date.now() && (classChanged || startChanged)) {
+            return { schedule: existing, rosterLocked: true };
+        }
+
+        const finalClassId = data.class_id ?? existing.class_id;
+        await lockClasses(client, [existing.class_id, finalClassId]);
+        const schedule = await updateScheduleById(id, data, client);
+        if (classChanged || startChanged) {
+            await rosterRepository.rebuildSchedule(client, id, finalClassId);
+        }
+        return { schedule, rosterLocked: false };
+    });
+}
+
 module.exports = {
     findSchedulesForUser,
     findScheduleByIdForUser,
@@ -208,5 +241,7 @@ module.exports = {
     insertSchedule,
     updateScheduleById,
     deleteScheduleById
-    ,findConflict
+    ,findConflict,
+    insertScheduleWithRoster,
+    updateScheduleWithRoster
 };

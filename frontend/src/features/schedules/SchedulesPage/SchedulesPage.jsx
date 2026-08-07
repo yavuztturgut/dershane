@@ -14,6 +14,7 @@ import trLocale from '@fullcalendar/core/locales/tr';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/use-auth';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
 import { DualPanelModal } from '../../../components/ui/DualPanelModal/DualPanelModal';
@@ -50,6 +51,8 @@ function getTimestamp(value) {
 
 export function SchedulesPage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const modalQueryClient = useQueryClient();
   const { user } = useAuth();
   const isAdmin = user.role_name === 'admin';
@@ -130,6 +133,16 @@ export function SchedulesPage() {
       resetFormDirty(values);
     }
   }, [detailQuery.data, isAdmin, resetFormDirty, setFormInitialValues, setFormValues]);
+
+  useEffect(() => {
+    if (!isAdmin || location.state?.dashboardAction?.type !== 'create-schedule') return;
+    setEditingId(null);
+    setIsEditing(true);
+    form.setValues(initialValues);
+    form.resetDirty(initialValues);
+    setOpened(true);
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [form, isAdmin, location.pathname, location.search, location.state, navigate]);
 
   const saveMutation = useMutation({
     mutationFn: (values) => {

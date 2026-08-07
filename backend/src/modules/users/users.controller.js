@@ -31,7 +31,8 @@ async function deleteUser(req, res) {
     const user = await usersService.deleteUser(id);
 
     res.json({
-        message: 'User deleted successfully',
+        message: user.is_active === false ? 'Student deactivated successfully' : 'User deleted successfully',
+        action: user.is_active === false ? 'deactivated' : 'deleted',
         user
     });
 }

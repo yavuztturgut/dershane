@@ -4,7 +4,7 @@ import { useDebouncedValue } from '@mantine/hooks';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
@@ -28,6 +28,8 @@ const initialValues = { role_id: '', class_id: '', name: '', email: '', password
 
 export function UsersPage() {
   const { t } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const modalQueryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamValue = searchParams.get('search') || '';
@@ -67,6 +69,15 @@ export function UsersPage() {
     setSearchParams((current) => { const next = new URLSearchParams(current); if (debouncedSearch) next.set('search', debouncedSearch); else next.delete('search'); next.set('page', '1'); return next; });
   }, [debouncedSearch, searchParamValue, setSearchParams]);
   useEffect(() => { setSearchInput(searchParamValue); }, [searchParamValue]);
+  useEffect(() => {
+    const action = location.state?.dashboardAction;
+    if (action?.type !== 'create-user' || !roles) return;
+    const role = roles.find((item) => item.name === action.role);
+    setEditingId(null);
+    form.setValues({ ...initialValues, role_id: role ? String(role.id) : '' });
+    setOpened(true);
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
+  }, [form, location.pathname, location.search, location.state, navigate, roles]);
 
   const saveMutation = useMutation({
     mutationFn: (values) => {
@@ -84,8 +95,8 @@ export function UsersPage() {
     },
     onError: (error) => notifyError(getErrorMessage(error)),
   });
-  const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: (_, id) => {
-    notifySuccess(t('deleted'));
+  const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: (result, id) => {
+    notifySuccess(t(result?.action === 'deactivated' ? 'deactivated' : 'deleted'));
     queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });

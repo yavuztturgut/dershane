@@ -38,7 +38,7 @@ async function saveScheduleAttendance(scheduleId, records, user, filters = {}) {
     const available = await attendanceRepository.findScheduleAttendance(scheduleId);
     const studentIds = new Set(available.map((item) => item.student_id));
     if (records.some((record) => !studentIds.has(Number(record.student_id)))) {
-        throw createHttpError('Student does not belong to this class', 400, 'INVALID_ATTENDANCE_STUDENT');
+        throw createHttpError('Student is not part of this lesson roster', 400, 'INVALID_ATTENDANCE_STUDENT');
     }
     await attendanceRepository.upsertAttendance(
         scheduleId,

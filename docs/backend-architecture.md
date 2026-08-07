@@ -41,12 +41,15 @@
 - Schedule range filters use overlap semantics. Reject invalid time ranges, inactive or non-teacher assignees, and lessons that overlap for either the teacher or the class. Adjacent lessons are allowed.
 - Teachers can view or record attendance only for their own lessons, from the lesson start until 24 hours after its end. Admins can edit after that lock; students can view only their own completed-lesson history.
 - Attendance statuses are `present`, `absent`, `late` and `excused`. Records are unique per schedule and student, and saves must reject students outside the scheduled class.
+- Attendance eligibility and historical completion use the frozen `schedule_students` roster. Future rosters follow active class membership; class and start time become immutable when a lesson starts.
+- Student deletion is a soft deactivation so historical roster and attendance records remain stable.
 - User and attendance reports paginate in the service layer with bounded page sizes. Dashboard summaries and attendance reports are admin-only.
 
 ## Database
 
 - Use the shared pool from `backend/src/database/pool.js`. Keep SQL parameterized and return only fields required by the service or API.
 - Use explicit transactions for multi-row or multi-step atomic operations, including attendance upserts and password-reset token consumption.
+- Serialize roster-changing operations by locking affected class rows in ascending ID order inside the transaction.
 - Use `backend/src/database/create.sql` for a fresh database. Apply later changes with `npm run migrate`; migration files run in filename order and are recorded in `schema_migrations`.
 - Preserve database constraints for normalized class and course names, schedule time ordering, foreign-key integrity, attendance status values and one attendance record per student per schedule.
 

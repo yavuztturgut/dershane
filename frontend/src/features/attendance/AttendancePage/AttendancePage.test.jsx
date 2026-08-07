@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -49,7 +50,7 @@ import { AttendancePage } from './AttendancePage';
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<MantineProvider><QueryClientProvider client={client}><ModalsProvider><AttendancePage /></ModalsProvider></QueryClientProvider></MantineProvider>);
+  return render(<MantineProvider><QueryClientProvider client={client}><ModalsProvider><MemoryRouter><AttendancePage /></MemoryRouter></ModalsProvider></QueryClientProvider></MantineProvider>);
 }
 
 describe('AttendancePage daily admin report', () => {

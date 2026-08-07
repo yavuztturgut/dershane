@@ -1,0 +1,41 @@
+.surface {
+  display: grid;
+  gap: var(--mantine-spacing-md);
+  padding: var(--mantine-spacing-lg);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--mantine-font-size-lg);
+  line-height: 1.3;
+}
+
+.description {
+  margin: var(--mantine-spacing-xs) 0 0;
+  color: var(--mantine-color-dimmed);
+  font-size: var(--mantine-font-size-sm);
+}
+
+.chart {
+  width: 100%;
+  height: 18rem;
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  min-height: 12rem;
+  color: var(--mantine-color-dimmed);
+  text-align: center;
+}
+
+@media (max-width: 36rem) {
+  .surface {
+    padding: var(--mantine-spacing-md);
+  }
+
+  .chart {
+    height: 15rem;
+  }
+}
