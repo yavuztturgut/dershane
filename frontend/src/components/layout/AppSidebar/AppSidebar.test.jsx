@@ -20,18 +20,18 @@ describe('AppSidebar role visibility', () => {
     expect(screen.getByText('Users')).toBeInTheDocument();
     expect(screen.getByText('Attendance')).toBeInTheDocument();
   });
-  it('shows admin links in the requested order without the courses link', () => {
+  it('shows admin links with courses between users and classes', () => {
     renderSidebar({ name: 'Admin', role_name: 'admin' });
     expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Dashboard',
       'Schedules',
       'Attendance',
       'Users',
+      'Courses',
       'Classes',
       'Roles',
       'Profile',
     ]);
-    expect(screen.queryByText('Courses')).not.toBeInTheDocument();
   });
   it('shows a student only personal destinations', () => {
     renderSidebar({ name: 'Student', role_name: 'student' });

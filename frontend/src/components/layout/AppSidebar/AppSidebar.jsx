@@ -1,6 +1,6 @@
 import { ActionIcon, AppShell, Group, NavLink, Select, Stack, Text } from '@mantine/core';
 import {
-  IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
+  IconBook2, IconCalendarEvent, IconChevronLeft, IconChevronRight, IconDashboard,
   IconLogout, IconSchool, IconUser, IconUsers, IconUserShield, IconChecklist,
 } from '@tabler/icons-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -14,6 +14,7 @@ const adminItems = [
   { to: '/schedules', key: 'schedules', icon: IconCalendarEvent },
   { to: '/attendance', key: 'attendance', icon: IconChecklist },
   { to: '/users', key: 'users', icon: IconUsers },
+  { to: '/courses', key: 'courses', icon: IconBook2 },
   { to: '/classes', key: 'classes', icon: IconSchool },
   { to: '/roles', key: 'roles', icon: IconUserShield },
   { to: '/profile', key: 'profile', icon: IconUser },
