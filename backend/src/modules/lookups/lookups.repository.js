@@ -19,7 +19,7 @@ async function findLookups() {
                 SELECT json_agg(json_build_object('id', u.id, 'name', u.name) ORDER BY u.name, u.id)
                 FROM users u
                 JOIN roles r ON r.id = u.role_id
-                WHERE r.name = 'teacher' AND u.is_active = true
+                WHERE r.name = 'teacher' AND u.status = 1
             ), '[]'::json) AS teachers
     `);
 

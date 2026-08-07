@@ -14,10 +14,13 @@ async function getUsers(query = {}) {
         search: String(query.search || '').trim(),
         role_id: query.role_id ? Number(query.role_id) : undefined,
         class_id: query.class_id ? Number(query.class_id) : undefined,
-        is_active: query.is_active === 'true' ? true : query.is_active === 'false' ? false : undefined,
+        status: query.status === undefined || query.status === '' ? undefined : Number(query.status),
         sort: query.sort,
         order: query.order
     };
+    if (filters.status !== undefined && ![-1, 0, 1].includes(filters.status)) {
+        throw createHttpError('status must be -1, 0 or 1', 400, 'INVALID_USER_STATUS');
+    }
     const { items, total } = await usersRepository.findAllUsers(filters);
     return { items, page, pageSize, total, totalPages: Math.ceil(total / pageSize) };
 }
@@ -63,7 +66,7 @@ async function validateUserData(data, isCreate = false, existingUser) {
 async function getUserById(id) {
     const user = await usersRepository.findUserById(id);
 
-    if (!user) {
+    if (!user || user.status === -1) {
         throw createHttpError('User not found', 404);
     }
 
@@ -85,11 +88,15 @@ async function createUser(data) {
     }, roleName);
 }
 
-async function updateUser(id, data) {
+async function updateUser(id, data, actorId) {
     const existingUser = await usersRepository.findUserWithPasswordById(id);
 
-    if (!existingUser) {
+    if (!existingUser || existingUser.status === -1) {
         throw createHttpError('User not found', 404);
+    }
+
+    if (data.status !== undefined && (!Number.isInteger(data.status) || ![0, 1].includes(data.status))) {
+        throw createHttpError('status must be 0 or 1', 400, 'INVALID_USER_STATUS');
     }
 
     await validateUserData(data, false, existingUser);
@@ -109,20 +116,27 @@ async function updateUser(id, data) {
         name: data.name,
         email: data.email,
         password: hashedPassword,
-        is_active: data.is_active,
+        status: data.status,
         passwordChanged
-    });
+    }, actorId);
     authStateCache.invalidate(id);
     return user;
 }
 
-async function deleteUser(id) {
-    const user = await usersRepository.deleteUserPreservingHistory(id);
+async function deleteUser(id, actorId) {
+    const user = await usersRepository.archiveUser(id, actorId);
 
     if (!user) {
         throw createHttpError('User not found', 404);
     }
 
+    authStateCache.invalidate(id);
+    return user;
+}
+
+async function restoreUser(id) {
+    const user = await usersRepository.restoreUser(id);
+    if (!user) throw createHttpError('User not found', 404, 'USER_NOT_FOUND');
     authStateCache.invalidate(id);
     return user;
 }
@@ -133,5 +147,6 @@ module.exports = {
     getUserById,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    restoreUser
 };

@@ -20,7 +20,7 @@ CREATE TABLE users(
                       name VARCHAR(100) NOT NULL,
                       email VARCHAR(100) NOT NULL UNIQUE,
                       password VARCHAR(100) NOT NULL,
-                      is_active BOOLEAN DEFAULT TRUE,
+                      status SMALLINT NOT NULL DEFAULT 1 CHECK (status IN (-1, 0, 1)),
                       token_version INTEGER NOT NULL DEFAULT 0,
                       created_at TIMESTAMP DEFAULT NOW(),
                       updated_at TIMESTAMP DEFAULT NOW()

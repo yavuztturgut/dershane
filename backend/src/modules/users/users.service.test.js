@@ -6,10 +6,10 @@ const service = require('./users.service');
 test('user pagination normalizes filters and caps page size', async () => {
     let received;
     repository.findAllUsers = async (filters) => { received = filters; return { items: [{ id: 1 }], total: 201 }; };
-    const result = await service.getUsers({ page: '2', pageSize: '1000', search: ' Ada ', is_active: 'false', order: 'desc' });
+    const result = await service.getUsers({ page: '2', pageSize: '1000', search: ' Ada ', status: '0', order: 'desc' });
     assert.equal(received.pageSize, 100);
     assert.equal(received.search, 'Ada');
-    assert.equal(received.is_active, false);
+    assert.equal(received.status, 0);
     assert.equal(result.totalPages, 3);
 });
 
@@ -42,8 +42,22 @@ test('user options only allow supported roles and normalize class filters', asyn
     );
 });
 
-test('student deletion delegates to history-preserving deactivation', async () => {
-    repository.deleteUserPreservingHistory = async () => ({ id: 7, is_active: false });
-    const user = await service.deleteUser(7);
-    assert.deepEqual(user, { id: 7, is_active: false });
+test('user deletion archives the account and forwards the acting admin', async () => {
+    let received;
+    repository.archiveUser = async (id, actorId) => { received = { id, actorId }; return { id: 7, status: -1 }; };
+    const user = await service.deleteUser(7, 3);
+    assert.deepEqual(received, { id: 7, actorId: 3 });
+    assert.deepEqual(user, { id: 7, status: -1 });
+});
+
+test('restoring a deleted user returns an active account', async () => {
+    repository.restoreUser = async () => ({ id: 7, status: 1 });
+    assert.deepEqual(await service.restoreUser(7), { id: 7, status: 1 });
+});
+
+test('user status filters reject unsupported values', async () => {
+    await assert.rejects(
+        service.getUsers({ status: '2' }),
+        (error) => error.errorCode === 'INVALID_USER_STATUS'
+    );
 });

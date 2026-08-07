@@ -25,7 +25,7 @@ async function login(data) {
         throw createHttpError('Invalid email or password', 401);
     }
 
-    if (!user.is_active) {
+    if (user.status !== 1) {
         throw createHttpError('User is inactive', 403);
     }
 
@@ -111,7 +111,7 @@ async function forgotPassword(data) {
     const email = data.email?.trim().toLowerCase();
     if (!email) return;
     const user = await authRepository.findUserByEmail(email);
-    if (!user || !user.is_active) return;
+    if (!user || user.status !== 1) return;
 
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex');

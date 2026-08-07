@@ -5,11 +5,21 @@ const service = require('./auth.service');
 const emailService = require('./email.service');
 
 test('login fails closed for unsupported roles', async () => {
-    repository.findUserByEmail = async () => ({ id: 1, role_name: 'custom', is_active: true, password: 'unused' });
+    repository.findUserByEmail = async () => ({ id: 1, role_name: 'custom', status: 1, password: 'unused' });
     await assert.rejects(
         service.login({ email: 'custom@example.com', password: 'password' }),
         (error) => error.statusCode === 403 && error.errorCode === 'FORBIDDEN'
     );
+});
+
+test('inactive and deleted users cannot log in', async () => {
+    for (const status of [0, -1]) {
+        repository.findUserByEmail = async () => ({ id: 1, role_name: 'admin', status, password: 'unused' });
+        await assert.rejects(
+            service.login({ email: 'user@example.com', password: '12345678' }),
+            (error) => error.statusCode === 403 && error.message === 'User is inactive'
+        );
+    }
 });
 
 test('invalid reset tokens return a stable error code', async () => {
@@ -21,7 +31,7 @@ test('invalid reset tokens return a stable error code', async () => {
 });
 
 test('forgot password passes the selected language to the email service', async () => {
-    repository.findUserByEmail = async () => ({ id: 1, name: 'Yavuz', email: 'yavuz@example.com', is_active: true });
+    repository.findUserByEmail = async () => ({ id: 1, name: 'Yavuz', email: 'yavuz@example.com', status: 1 });
     repository.createPasswordResetToken = async () => undefined;
     let sentEmail;
     emailService.sendPasswordReset = async (message) => { sentEmail = message; };

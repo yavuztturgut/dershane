@@ -22,19 +22,24 @@ async function getUserById(req, res) {
 
 async function updateUser(req, res) {
     const { id } = req.params;
-    const user = await usersService.updateUser(id, req.body);
+    const user = await usersService.updateUser(id, req.body, req.user.id);
     res.json(user);
 }
 
 async function deleteUser(req, res) {
     const { id } = req.params;
-    const user = await usersService.deleteUser(id);
+    const user = await usersService.deleteUser(id, req.user.id);
 
     res.json({
-        message: user.is_active === false ? 'Student deactivated successfully' : 'User deleted successfully',
-        action: user.is_active === false ? 'deactivated' : 'deleted',
+        message: 'User deleted successfully',
+        action: 'deleted',
         user
     });
+}
+
+async function restoreUser(req, res) {
+    const user = await usersService.restoreUser(req.params.id);
+    res.json({ message: 'User restored successfully', action: 'restored', user });
 }
 
 module.exports = {
@@ -43,5 +48,6 @@ module.exports = {
     createUser,
     getUserById,
     updateUser,
-    deleteUser
+    deleteUser,
+    restoreUser
 };

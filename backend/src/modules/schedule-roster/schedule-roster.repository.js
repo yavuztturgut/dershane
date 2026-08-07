@@ -4,7 +4,7 @@ async function populateSchedule(client, scheduleId, classId) {
          SELECT $1, student.id
          FROM users student
          JOIN roles role ON role.id = student.role_id AND role.name = 'student'
-         WHERE student.class_id = $2 AND student.is_active = true
+         WHERE student.class_id = $2 AND student.status = 1
          ON CONFLICT (schedule_id, student_id) DO NOTHING`,
         [scheduleId, classId]
     );

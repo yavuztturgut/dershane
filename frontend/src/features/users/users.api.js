@@ -7,4 +7,5 @@ export const usersApi = {
   create: async (data) => (await apiClient.post('/users', data)).data,
   update: async (id, data) => (await apiClient.put(`/users/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/users/${id}`)).data,
+  restore: async (id) => (await apiClient.patch(`/users/${id}/restore`)).data,
 };

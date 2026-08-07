@@ -12,7 +12,7 @@ const attendanceStatsSql = `
 async function findTotals() {
     const result = await pool.query(`
         SELECT
-            (SELECT COUNT(*)::INTEGER FROM users) AS users,
+            (SELECT COUNT(*)::INTEGER FROM users WHERE status <> -1) AS users,
             (SELECT COUNT(*)::INTEGER FROM courses) AS courses,
             (SELECT COUNT(*)::INTEGER FROM classes) AS classes,
             (SELECT COUNT(*)::INTEGER FROM schedules) AS schedules

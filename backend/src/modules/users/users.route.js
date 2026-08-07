@@ -11,6 +11,7 @@ router.get('/options', authMiddleware, requireRole('admin'), asyncHandler(usersC
 router.get('/:id', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUserById));
 router.post('/', authMiddleware, requireRole('admin'), asyncHandler(usersController.createUser));
 router.put('/:id', authMiddleware, requireRole('admin'), asyncHandler(usersController.updateUser));
+router.patch('/:id/restore', authMiddleware, requireRole('admin'), asyncHandler(usersController.restoreUser));
 router.delete('/:id', authMiddleware, requireRole('admin'), asyncHandler(usersController.deleteUser));
 
 module.exports = router;

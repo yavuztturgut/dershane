@@ -12,7 +12,7 @@ async function findUserByEmail(email) {
               u.name,
               u.email,
               u.password,
-              u.is_active
+              u.status
               ,u.token_version
           FROM users u
           JOIN roles r ON r.id = u.role_id
@@ -36,7 +36,7 @@ async function findProfileById(id) {
               c.name AS class_name,
               u.name,
               u.email,
-              u.is_active,
+              u.status,
               u.created_at,
               u.updated_at
           FROM users u
@@ -52,7 +52,7 @@ async function findProfileById(id) {
 
 async function findAuthStateById(id) {
     const result = await pool.query(
-        `SELECT u.id, u.role_id, r.name AS role_name, u.class_id, u.is_active, u.token_version
+        `SELECT u.id, u.role_id, r.name AS role_name, u.class_id, u.status, u.token_version
          FROM users u JOIN roles r ON r.id = u.role_id WHERE u.id = $1`,
         [id]
     );
@@ -62,7 +62,7 @@ async function findAuthStateById(id) {
 async function updateProfile(id, data) {
     const result = await pool.query(
         `UPDATE users SET name = $1, email = $2, updated_at = NOW() WHERE id = $3
-         RETURNING id, role_id, class_id, name, email, is_active, created_at, updated_at`,
+         RETURNING id, role_id, class_id, name, email, status, created_at, updated_at`,
         [data.name, data.email, id]
     );
     return result.rows[0];
@@ -93,7 +93,7 @@ async function findValidPasswordResetToken(tokenHash) {
         `SELECT prt.id, prt.user_id
          FROM password_reset_tokens prt
          JOIN users u ON u.id = prt.user_id
-         WHERE prt.token_hash = $1 AND prt.used_at IS NULL AND prt.expires_at > NOW() AND u.is_active = true`,
+         WHERE prt.token_hash = $1 AND prt.used_at IS NULL AND prt.expires_at > NOW() AND u.status = 1`,
         [tokenHash]
     );
     return result.rows[0];

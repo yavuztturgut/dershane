@@ -118,7 +118,7 @@ async function isActiveTeacher(userId, db = pool) {
           JOIN roles r ON r.id = u.role_id
           WHERE u.id = $1
             AND r.name = 'teacher'
-            AND u.is_active = true
+            AND u.status = 1
           `,
         [userId]
     );

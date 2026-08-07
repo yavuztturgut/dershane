@@ -1,7 +1,7 @@
 import { ActionIcon, Alert, Button, Group, Pagination, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconEdit, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconRestore, IconTrash } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -24,7 +24,7 @@ import { UserForm } from '../UserForm/UserForm';
 import { UserList } from '../UserList/UserList';
 import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
 
-const initialValues = { role_id: '', class_id: '', name: '', email: '', password: '', is_active: true };
+const initialValues = { role_id: '', class_id: '', name: '', email: '', password: '', status: 1 };
 
 export function UsersPage() {
   const { t } = useTranslation();
@@ -99,7 +99,15 @@ export function UsersPage() {
     onError: (error) => notifyError(getErrorMessage(error)),
   });
   const deleteMutation = useMutation({ mutationFn: usersApi.remove, onSuccess: (result, id) => {
-    notifySuccess(t(result?.action === 'deactivated' ? 'deactivated' : 'deleted'));
+    notifySuccess(t('deleted'));
+    queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.lookups.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+  }, onError: (error) => notifyError(getErrorMessage(error)) });
+  const restoreMutation = useMutation({ mutationFn: usersApi.restore, onSuccess: (result, id) => {
+    notifySuccess(t('restored'));
     queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
     queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });
@@ -112,7 +120,7 @@ export function UsersPage() {
   const roleOptions = roles?.map((role) => ({ value: String(role.id), label: role.name })) || [];
   const classOptions = classes?.map((item) => ({ value: String(item.id), label: item.name })) || [];
   const setFilter = (key, value) => setSearchParams((current) => { const next = new URLSearchParams(current); if (value) next.set(key, value); else next.delete(key); if (key !== 'page') next.set('page', '1'); return next; });
-  const activeFilterCount = ['role_id', 'class_id', 'is_active', 'sort', 'order'].filter((key) => searchParams.has(key)).length;
+  const activeFilterCount = ['role_id', 'class_id', 'status', 'sort', 'order'].filter((key) => searchParams.has(key)).length;
   const clearFilters = () => setSearchParams((current) => { const next = new URLSearchParams(); if (current.get('search')) next.set('search', current.get('search')); return next; });
 
   function openCreate() { setEditingId(null); form.setValues(initialValues); setOpened(true); }
@@ -131,7 +139,9 @@ export function UsersPage() {
   if ((usersQuery.isError && !usersQuery.data) || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
   const pageData = usersQuery.data;
 
-  const rowActions = (user) => <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
+  const rowActions = (user) => user.status === -1
+    ? <ActionIcon color="green" variant="subtle" loading={restoreMutation.isPending && restoreMutation.variables === user.id} onClick={() => restoreMutation.mutate(user.id)} aria-label={t('restore')}><IconRestore size={18} /></ActionIcon>
+    : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
   const filterFields = <UserFilters searchParams={searchParams} setFilter={setFilter} roleOptions={roleOptions} classOptions={classOptions} t={t} />;
 
   return <PageContainer><PageHeader title={t('users')} description={t('usersDescription')} onCreate={openCreate} createLabel={t('create')} />

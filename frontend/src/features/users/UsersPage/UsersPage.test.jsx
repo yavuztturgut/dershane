@@ -15,9 +15,10 @@ vi.mock('../../lookups/use-lookups', () => ({
   useLookups: () => ({ data: lookups, isLoading: false, isError: false }),
 }));
 
-const firstPage = { items: [{ id: 1, name: 'Ada', email: 'ada@example.com', role_id: 1, class_id: null, is_active: true }], page: 1, totalPages: 1 };
+const firstPage = { items: [{ id: 1, name: 'Ada', email: 'ada@example.com', role_id: 1, class_id: null, status: 1 }], page: 1, totalPages: 1 };
 const getPage = vi.fn(async () => firstPage);
-vi.mock('../users.api', () => ({ usersApi: { getPage: (...args) => getPage(...args), getById: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn() } }));
+const restore = vi.fn(async (id) => ({ action: 'restored', user: { id, status: 1 } }));
+vi.mock('../users.api', () => ({ usersApi: { getPage: (...args) => getPage(...args), getById: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: (...args) => restore(...args) } }));
 
 import { UsersPage } from './UsersPage';
 
@@ -31,6 +32,7 @@ describe('UsersPage filtering', () => {
     cleanup();
     getPage.mockReset();
     getPage.mockResolvedValue(firstPage);
+    restore.mockClear();
   });
 
   it('keeps the previous users visible without a spinner while a filter request is pending', async () => {
@@ -76,5 +78,22 @@ describe('UsersPage filtering', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
 
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+  });
+
+  it('shows deleted users only through the deleted filter and restores them', async () => {
+    getPage.mockResolvedValueOnce(firstPage).mockResolvedValueOnce({
+      items: [{ ...firstPage.items[0], status: -1 }], page: 1, totalPages: 1,
+    });
+    renderPage();
+    await screen.findAllByText('Ada');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByPlaceholderText('Status'));
+    await user.click(await screen.findByText('Deleted'));
+
+    const [restoreButton] = await screen.findAllByRole('button', { name: 'Restore' });
+    expect(getPage).toHaveBeenLastCalledWith(expect.objectContaining({ status: '-1' }));
+    await user.click(restoreButton);
+    await waitFor(() => expect(restore.mock.calls[0]?.[0]).toBe(1));
   });
 });
