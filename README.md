@@ -136,6 +136,7 @@ npm install
 PORT=3000
 DATABASE_URL=postgres://postgres:password@localhost:5432/dershane
 JWT_SECRET=replace-with-a-long-random-secret
+CRON_SECRET=replace-with-a-separate-random-secret
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_SECURE=false
@@ -151,6 +152,7 @@ RESET_URL_BASE=http://localhost:5173/reset-password
 | `PORT` | Backend HTTP portu. Varsayılan değer `3000`'dir. |
 | `DATABASE_URL` | PostgreSQL bağlantı adresi. |
 | `JWT_SECRET` | JWT imzalamak ve doğrulamak için kullanılan gizli anahtar. |
+| `CRON_SECRET` | Veritabanı keep-alive endpoint'ini doğrulayan, en az 32 karakterlik ayrı gizli anahtar. |
 | `SMTP_HOST` | Şifre sıfırlama e-postaları için SMTP sunucusu. |
 | `SMTP_PORT` | SMTP sunucusunun portu. |
 | `SMTP_SECURE` | Güvenli SMTP bağlantısının kullanılıp kullanılmayacağı. |
@@ -161,6 +163,12 @@ RESET_URL_BASE=http://localhost:5173/reset-password
 | `RESET_URL_BASE` | E-postadaki şifre sıfırlama bağlantısının temel adresi. |
 
 SMTP ayarları yapılmadan uygulamanın diğer bölümleri çalışır; ancak şifre sıfırlama e-postası teslim edilemez. Gizli değerleri repoya eklemeyin.
+
+### Supabase keep-alive cron
+
+Vercel production deploy'u `17 3 */2 * *` zamanlamasıyla `/api/maintenance/database-keep-alive` endpoint'ini çağırır. Endpoint gerçek bir `SELECT 1` sorgusu çalıştırır ve yalnızca `Authorization: Bearer <CRON_SECRET>` başlığıyla erişilebilir.
+
+Vercel'in cron isteğine bu başlığı otomatik ekleyebilmesi için aynı güçlü `CRON_SECRET` değeri hem frontend Vercel projesinde hem de backend deployment ortamında tanımlanmalıdır. Secret tanımlanmadan endpoint güvenli biçimde `503`, yanlış secret ile `401` döner. Cron çalışma sonuçları Vercel Dashboard'daki **Cron Jobs** ve backend loglarından izlenir.
 
 ### 3. Frontend ortam değişkenini ayarlayın
 

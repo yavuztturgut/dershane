@@ -10,6 +10,7 @@ const scheduleRoutes = require('./modules/schedules/schedules.route');
 const dashboardRoutes = require('./modules/dashboard/dashboard.route');
 const attendanceRoutes = require('./modules/attendance/attendance.route');
 const lookupRoutes = require('./modules/lookups/lookups.route');
+const maintenanceRoutes = require('./modules/maintenance/maintenance.route');
 const errorMiddleware = require('./middleware/error-middleware');
 const app = express();
 
@@ -39,6 +40,7 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/lookups', lookupRoutes);
+app.use('/api/maintenance', maintenanceRoutes);
 
 app.use(errorMiddleware);
 
