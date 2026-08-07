@@ -2,7 +2,7 @@ import { ActionIcon, Alert, Button, Group, Pagination, TextInput } from '@mantin
 import { useForm } from '@mantine/form';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconEdit, IconTrash } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -37,6 +37,7 @@ export function UsersPage() {
   const [debouncedSearch] = useDebouncedValue(searchInput, 300);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const handledDashboardActionKey = useRef(null);
   const lookupsQuery = useLookups();
   const roles = lookupsQuery.data?.roles;
   const classes = lookupsQuery.data?.classes;
@@ -72,12 +73,14 @@ export function UsersPage() {
   useEffect(() => {
     const action = location.state?.dashboardAction;
     if (action?.type !== 'create-user' || !roles) return;
+    if (handledDashboardActionKey.current === location.key) return;
+    handledDashboardActionKey.current = location.key;
     const role = roles.find((item) => item.name === action.role);
     setEditingId(null);
-    form.setValues({ ...initialValues, role_id: role ? String(role.id) : '' });
+    setFormValues({ ...initialValues, role_id: role ? String(role.id) : '' });
     setOpened(true);
     navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: null });
-  }, [form, location.pathname, location.search, location.state, navigate, roles]);
+  }, [location.key, location.pathname, location.search, location.state, navigate, roles, setFormValues]);
 
   const saveMutation = useMutation({
     mutationFn: (values) => {

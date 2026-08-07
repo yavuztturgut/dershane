@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 
 const lookups = {
-  roles: [{ id: 1, name: 'admin' }, { id: 2, name: 'teacher' }],
+  roles: [{ id: 1, name: 'admin' }, { id: 2, name: 'teacher' }, { id: 3, name: 'student' }],
   classes: [{ id: 1, name: 'Class A' }],
 };
 vi.mock('../../lookups/use-lookups', () => ({
@@ -21,9 +21,9 @@ vi.mock('../users.api', () => ({ usersApi: { getPage: (...args) => getPage(...ar
 
 import { UsersPage } from './UsersPage';
 
-function renderPage() {
+function renderPage(initialEntries = ['/users']) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
-  return render(<MantineProvider><QueryClientProvider client={client}><ModalsProvider><MemoryRouter initialEntries={['/users']}><UsersPage /></MemoryRouter></ModalsProvider></QueryClientProvider></MantineProvider>);
+  return render(<MantineProvider><QueryClientProvider client={client}><ModalsProvider><MemoryRouter initialEntries={initialEntries}><UsersPage /></MemoryRouter></ModalsProvider></QueryClientProvider></MantineProvider>);
 }
 
 describe('UsersPage filtering', () => {
@@ -61,5 +61,20 @@ describe('UsersPage filtering', () => {
 
     expect(screen.getByDisplayValue('ada@example.com')).toBeInTheDocument();
     expect(screen.queryByLabelText('Loading')).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ['student'],
+    ['teacher'],
+  ])('closes the %s create modal opened from a dashboard quick action', async (role) => {
+    renderPage([{ pathname: '/users', state: { dashboardAction: { type: 'create-user', role } } }]);
+
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue(role)).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
   });
 });
