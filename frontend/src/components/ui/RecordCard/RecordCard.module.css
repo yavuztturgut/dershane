@@ -1,0 +1,43 @@
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  gap: var(--mantine-spacing-sm);
+}
+
+.heading {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.actions {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.field {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-width: 0;
+  gap: var(--mantine-spacing-lg);
+}
+
+.fieldLabel {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.fieldValue {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 70%;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 24rem) {
+  .field {
+    gap: var(--mantine-spacing-sm);
+  }
+}

@@ -1,0 +1,47 @@
+.layout,
+.formPane,
+.illustrationPane {
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.layout {
+  max-width: 100%;
+}
+
+.formPane {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: max(4rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(4rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+}
+
+.controls {
+  position: absolute;
+  z-index: 10;
+  inset-block-start: max(1rem, env(safe-area-inset-top));
+  inset-inline-end: max(1rem, env(safe-area-inset-right));
+}
+
+.card {
+  width: 100%;
+  max-width: 28rem;
+  min-width: 0;
+}
+
+@media (min-width: 64rem) {
+  .layoutWithIllustration {
+    display: grid;
+    grid-template-columns: minmax(0, 30fr) minmax(0, 70fr);
+  }
+
+  .formPane {
+    padding-inline: 2rem;
+  }
+
+  .controls {
+    inset-block-start: max(2rem, env(safe-area-inset-top));
+    inset-inline-end: 2rem;
+  }
+}
