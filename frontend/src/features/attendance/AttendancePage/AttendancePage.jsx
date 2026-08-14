@@ -1,7 +1,7 @@
 import { Accordion, Alert, Badge, Group, Pagination, Select, SimpleGrid, Text } from '@mantine/core';
 import { DateInput } from '@mantine/dates';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
@@ -47,7 +47,6 @@ export function AttendancePage() {
   const [openDays, setOpenDays] = useState([]);
   const [openLessons, setOpenLessons] = useState([]);
   const [dirtyLessons, setDirtyLessons] = useState({});
-  const initializedView = useRef('');
   const params = useMemo(() => ({
     class_id: filters.class_id || undefined,
     student_id: filters.student_id || undefined,
@@ -73,17 +72,6 @@ export function AttendancePage() {
     staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
-  const viewKey = JSON.stringify(params);
-
-  useEffect(() => {
-    if (!isAdmin || !query.data || query.isPlaceholderData || initializedView.current === viewKey) return;
-    const firstDay = query.data.days[0];
-    setOpenDays(firstDay ? [firstDay.date] : []);
-    setOpenLessons(firstDay?.schedules[0] ? [String(firstDay.schedules[0].schedule_id)] : []);
-    setDirtyLessons({});
-    initializedView.current = viewKey;
-  }, [isAdmin, query.data, query.isPlaceholderData, viewKey]);
-
   useEffect(() => {
     const action = location.state?.dashboardAction;
     if (!isAdmin || action?.type !== 'open-attendance' || !query.data || query.isPlaceholderData) return;

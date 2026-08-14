@@ -69,14 +69,16 @@ describe('AttendancePage daily admin report', () => {
     expect(attendanceCss).toContain('background: var(--mantine-color-green-5)');
   });
 
-  it('opens only the newest day and its first lesson, then lazy-loads another lesson', async () => {
+  it('keeps days closed initially, then lazy-loads an opened lesson', async () => {
     renderPage();
 
-    expect(await screen.findByTestId('editor-11')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Monday, August 3, 2026/ })).toBeInTheDocument();
+    expect(screen.queryByTestId('editor-11')).not.toBeInTheDocument();
     expect(screen.queryByTestId('editor-12')).not.toBeInTheDocument();
     expect(screen.queryByTestId('editor-10')).not.toBeInTheDocument();
     expect(getDailyReport).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 7 }));
 
+    fireEvent.click(screen.getByRole('button', { name: /Monday, August 3, 2026/ }));
     fireEvent.click(screen.getByRole('button', { name: /10:00.*Physics/ }));
     expect(await screen.findByTestId('editor-12')).toBeInTheDocument();
   });
@@ -84,6 +86,8 @@ describe('AttendancePage daily admin report', () => {
   it('keeps a dirty lesson open until discard is confirmed', async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.click(await screen.findByRole('button', { name: /Monday, August 3, 2026/ }));
+    await user.click(screen.getByRole('button', { name: /08:00.*Math/ }));
     await user.click(await screen.findByRole('button', { name: 'Mark dirty 11' }));
     await user.click(screen.getByRole('button', { name: /08:00.*Math/ }));
 
@@ -100,6 +104,8 @@ describe('AttendancePage daily admin report', () => {
   it('passes the selected student into the opened editor without a duplicate report refresh after save', async () => {
     const user = userEvent.setup();
     renderPage();
+    await user.click(await screen.findByRole('button', { name: /Monday, August 3, 2026/ }));
+    await user.click(screen.getByRole('button', { name: /08:00.*Math/ }));
     await screen.findByTestId('editor-11');
     await user.click(screen.getByPlaceholderText('Student'));
     await user.click(await screen.findByText('Ada'));
@@ -114,6 +120,8 @@ describe('AttendancePage daily admin report', () => {
   it('keeps the previous report visible without a spinner while a filter request is pending', async () => {
     let resolveFilteredReport;
     renderPage();
+    fireEvent.click(await screen.findByRole('button', { name: /Monday, August 3, 2026/ }));
+    fireEvent.click(screen.getByRole('button', { name: /08:00.*Math/ }));
     expect(await screen.findByTestId('editor-11')).toBeInTheDocument();
     getDailyReport.mockImplementationOnce(() => new Promise((resolve) => { resolveFilteredReport = resolve; }));
 
@@ -135,6 +143,6 @@ describe('AttendancePage daily admin report', () => {
       }],
     };
     await act(async () => resolveFilteredReport(filteredReport));
-    expect(await screen.findByTestId('editor-99')).toBeInTheDocument();
+    expect(screen.queryByTestId('editor-99')).not.toBeInTheDocument();
   });
 });
