@@ -26,7 +26,7 @@ export function AppLayout() {
         </AppShell.Header>
       )}
       <AppSidebar collapsed={collapsed} onToggle={toggleCollapsed} onNavigate={closeMobile} />
-      <AppShell.Main className="min-w-0">
+      <AppShell.Main className="min-w-0 max-w-full overflow-x-hidden">
         <Outlet />
       </AppShell.Main>
     </AppShell>

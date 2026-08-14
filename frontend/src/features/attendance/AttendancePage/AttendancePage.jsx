@@ -30,8 +30,8 @@ function toDate(value) {
   return `${year}-${month}-${day}`;
 }
 
-function formatDay(value) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+function formatDay(value, locale) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 const countColors = { present: 'green', absent: 'red', late: 'orange', excused: 'pink', not_recorded: 'gray' };
@@ -159,7 +159,7 @@ export function AttendancePage() {
       <div aria-busy={query.isFetching}>{(query.isError && !query.data) ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
         <Accordion multiple value={openDays} onChange={changeDays} className={styles.days}>
           {query.data.days.map((day) => <Accordion.Item value={day.date} key={day.date} className={styles.day}>
-            <Accordion.Control><Group justify="space-between" wrap="wrap" gap="xs" pr="sm"><Text fw={700}>{formatDay(day.date)}</Text><Group gap="xs"><Badge variant="light">{t('lessonCount', { count: day.lesson_count })}</Badge><Badge color={day.attendance_taken_count === day.lesson_count ? 'green' : 'gray'} variant="light">{t('attendanceProgress', { taken: day.attendance_taken_count, total: day.lesson_count })}</Badge></Group></Group></Accordion.Control>
+            <Accordion.Control><Group justify="space-between" wrap="wrap" gap="xs" pr="sm"><Text fw={700}>{formatDay(day.date, i18n.language)}</Text><Group gap="xs"><Badge variant="light">{t('lessonCount', { count: day.lesson_count })}</Badge><Badge color={day.attendance_taken_count === day.lesson_count ? 'green' : 'gray'} variant="light">{t('attendanceProgress', { taken: day.attendance_taken_count, total: day.lesson_count })}</Badge></Group></Group></Accordion.Control>
             <Accordion.Panel><Accordion multiple value={openLessons.filter((id) => day.schedules.some((lesson) => String(lesson.schedule_id) === id))} onChange={(values) => changeLessons(day, values)}>
               {day.schedules.map((lesson) => {
                 const lessonId = String(lesson.schedule_id);

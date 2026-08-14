@@ -79,7 +79,7 @@ describe('AttendancePage daily admin report', () => {
     expect(getDailyReport).toHaveBeenCalledWith(expect.objectContaining({ page: 1, pageSize: 7 }));
 
     fireEvent.click(screen.getByRole('button', { name: /Monday, August 3, 2026/ }));
-    fireEvent.click(screen.getByRole('button', { name: /10:00.*Physics/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /10:00.*Physics/ }));
     expect(await screen.findByTestId('editor-12')).toBeInTheDocument();
   });
 
@@ -121,7 +121,7 @@ describe('AttendancePage daily admin report', () => {
     let resolveFilteredReport;
     renderPage();
     fireEvent.click(await screen.findByRole('button', { name: /Monday, August 3, 2026/ }));
-    fireEvent.click(screen.getByRole('button', { name: /08:00.*Math/ }));
+    fireEvent.click(await screen.findByRole('button', { name: /08:00.*Math/ }));
     expect(await screen.findByTestId('editor-11')).toBeInTheDocument();
     getDailyReport.mockImplementationOnce(() => new Promise((resolve) => { resolveFilteredReport = resolve; }));
 

@@ -9,6 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const usersPageCss = readFileSync(resolve(process.cwd(), 'src/features/users/UsersPage/UsersPage.module.css'), 'utf8');
+const recordCardCss = readFileSync(resolve(process.cwd(), 'src/components/ui/RecordCard/RecordCard.module.css'), 'utf8');
 
 const lookups = {
   roles: [{ id: 1, name: 'admin' }, { id: 2, name: 'teacher' }, { id: 3, name: 'student' }],
@@ -46,6 +47,13 @@ describe('UsersPage filtering', () => {
   it('keeps the bulk action bar fixed at the bottom of the viewport', () => {
     expect(usersPageCss).toContain('position: fixed');
     expect(usersPageCss).toContain('bottom: max(');
+    expect(usersPageCss).toContain('max-width: calc(100vw');
+  });
+
+  it('allows mobile record content to shrink without moving actions outside the card', () => {
+    expect(recordCardCss).toContain('flex: 1 1 auto');
+    expect(recordCardCss).toContain('flex: 0 0 auto');
+    expect(recordCardCss).toContain('overflow-wrap: anywhere');
   });
 
   it('keeps the previous users visible without a spinner while a filter request is pending', async () => {

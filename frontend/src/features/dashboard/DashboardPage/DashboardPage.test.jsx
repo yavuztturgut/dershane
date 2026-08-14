@@ -3,6 +3,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const dashboardCss = readFileSync(resolve(process.cwd(), 'src/features/dashboard/DashboardPage/DashboardPage.module.css'), 'utf8');
+const metricGridCss = readFileSync(resolve(process.cwd(), 'src/features/dashboard/DashboardMetricGrid/DashboardMetricGrid.module.css'), 'utf8');
 
 vi.mock('@mantine/charts', () => ({
   BarChart: ({ data }) => <div data-testid="attendance-chart">{data.length} days</div>,
@@ -74,6 +79,12 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     getSummary.mockReset();
     getSummary.mockResolvedValue(summary);
+  });
+
+  it('stretches dashboard sections and uses a single metric column on narrow screens', () => {
+    expect(dashboardCss).toContain('align-items: stretch');
+    expect(dashboardCss).toContain('width: 100%');
+    expect(metricGridCss).toMatch(/\.grid,\s*\n\s*\.compact\s*{\s*\n\s*grid-template-columns: 1fr/);
   });
 
   it('loads the dashboard once and renders operational sections', async () => {
