@@ -42,10 +42,12 @@ button, input, select, textarea {
 
 .fc .fc-scrollgrid { border-radius: var(--mantine-radius-md); overflow: hidden; }
 .fc .fc-col-header-cell { background: var(--mantine-color-gray-0); }
-.fc .fc-day-today { background: color-mix(in srgb, var(--mantine-color-blue-1) 28%, transparent) !important; }
+.fc .fc-day-today { background: transparent !important; }
+.fc .fc-col-header-cell.fc-day-today { background: var(--mantine-color-gray-0) !important; }
 [data-mantine-color-scheme='dark'] .fc { --fc-border-color: var(--mantine-color-dark-4); }
 [data-mantine-color-scheme='dark'] .fc .fc-col-header-cell { background: var(--mantine-color-dark-7); }
-[data-mantine-color-scheme='dark'] .fc .fc-day-today { background: color-mix(in srgb, var(--mantine-color-blue-8) 22%, transparent) !important; }
+[data-mantine-color-scheme='dark'] .fc .fc-day-today { background: transparent !important; }
+[data-mantine-color-scheme='dark'] .fc .fc-col-header-cell.fc-day-today { background: var(--mantine-color-dark-7) !important; }
 
 .login-orb {
   will-change: transform;

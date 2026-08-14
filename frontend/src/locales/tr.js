@@ -25,6 +25,7 @@ export default {
     scheduleDetails: 'Program detayı', createSchedule: 'Ders ekle', editSchedule: 'Dersi düzenle',
     unexpectedError: 'Bir hata oluştu', unexpectedErrorMessage: 'Uygulama bu ekranı görüntüleyemedi.', reload: 'Uygulamayı yenile',
     today: 'Bugün', previous: 'Önceki', next: 'Sonraki', day: 'Gün', week: 'Hafta', month: 'Ay',
+    simultaneousLessons: '{{count}} eşzamanlı ders', openSimultaneousLessons: '{{time}} saatindeki {{count}} eşzamanlı dersi aç',
     filterCourse: 'Derse göre filtrele', filterClass: 'Sınıfa göre filtrele', filterTeacher: 'Öğretmene göre filtrele',
     retry: 'Tekrar dene', search: 'Ad veya e-posta ara', yes: 'Evet', no: 'Hayır', sort: 'Sırala', ascending: 'Artan', descending: 'Azalan', createdOrder: 'Oluşturma sırası', systemRole: 'Sistem rolü', toggleSidebar: 'Kenar çubuğunu aç/kapat',
     resetPassword: 'Şifreyi sıfırla', newPassword: 'Yeni şifre', confirmPassword: 'Şifre tekrarı', currentPassword: 'Mevcut şifre', changePassword: 'Şifre değiştir', passwordChanged: 'Şifre değiştirildi. Yeniden giriş yapın.', passwordResetSuccess: 'Şifreniz sıfırlandı.',

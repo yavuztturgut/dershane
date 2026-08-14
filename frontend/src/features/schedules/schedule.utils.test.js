@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { filterSchedules, getCourseColor, getInitialVisibleRange } from './schedule.utils';
+import {
+  filterSchedules, getCourseColor, getInitialVisibleRange, groupOverlappingSchedules,
+} from './schedule.utils';
 import {
   formatIstanbulTime, instantToIstanbulCalendarDateTime,
   instantToIstanbulPickerDate, istanbulWallClockToIso,
@@ -20,6 +22,31 @@ describe('schedule utilities', () => {
   it('filters schedules by selected course, class and teacher', () => {
     expect(filterSchedules(schedules, { courseId: '1', classId: '2', teacherId: '' })).toEqual([schedules[0]]);
     expect(filterSchedules(schedules, { courseId: '', classId: '', teacherId: '4' })).toEqual([schedules[1], schedules[2]]);
+  });
+
+  it('groups directly and transitively overlapping lessons on the same Istanbul day', () => {
+    const overlapping = [
+      { id: 1, start_time: '2026-08-10T06:00:00.000Z', end_time: '2026-08-10T07:00:00.000Z' },
+      { id: 2, start_time: '2026-08-10T06:30:00.000Z', end_time: '2026-08-10T07:30:00.000Z' },
+      { id: 3, start_time: '2026-08-10T07:15:00.000Z', end_time: '2026-08-10T08:00:00.000Z' },
+    ];
+
+    const [group] = groupOverlappingSchedules(overlapping);
+
+    expect(group.schedules.map((item) => item.id)).toEqual([1, 2, 3]);
+    expect(group.start_time).toBe(overlapping[0].start_time);
+    expect(group.end_time).toBe(overlapping[2].end_time);
+  });
+
+  it('keeps adjacent lessons and lessons on different Istanbul days separate', () => {
+    const separate = [
+      { id: 1, start_time: '2026-08-10T06:00:00.000Z', end_time: '2026-08-10T07:00:00.000Z' },
+      { id: 2, start_time: '2026-08-10T07:00:00.000Z', end_time: '2026-08-10T08:00:00.000Z' },
+      { id: 3, start_time: '2026-08-11T06:30:00.000Z', end_time: '2026-08-11T07:30:00.000Z' },
+    ];
+
+    expect(groupOverlappingSchedules(separate).map((group) => group.schedules.map((item) => item.id)))
+      .toEqual([[1], [2], [3]]);
   });
 
   it('creates the exact Istanbul day range for the initial mobile view', () => {

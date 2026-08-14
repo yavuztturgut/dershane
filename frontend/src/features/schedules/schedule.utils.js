@@ -1,4 +1,6 @@
-import { instantToIstanbulPickerDate, istanbulWallClockToIso } from '../../shared/time/istanbul-date-time';
+import {
+  instantToIstanbulCalendarDateTime, instantToIstanbulPickerDate, istanbulWallClockToIso,
+} from '../../shared/time/istanbul-date-time';
 
 const courseColors = [
   '#2563eb', '#7c3aed', '#0891b2', '#059669',
@@ -33,4 +35,52 @@ export function filterSchedules(schedules, filters) {
     && (!filters.classId || String(schedule.class_id) === filters.classId)
     && (!filters.teacherId || String(schedule.teacher_id) === filters.teacherId)
   ));
+}
+
+export function groupOverlappingSchedules(schedules) {
+  const schedulesByDay = new Map();
+
+  schedules.forEach((schedule) => {
+    const dayKey = instantToIstanbulCalendarDateTime(schedule.start_time)?.slice(0, 10)
+      || `invalid-${schedule.id}`;
+    const daySchedules = schedulesByDay.get(dayKey) || [];
+    daySchedules.push(schedule);
+    schedulesByDay.set(dayKey, daySchedules);
+  });
+
+  return [...schedulesByDay.entries()]
+    .sort(([firstDay], [secondDay]) => firstDay.localeCompare(secondDay))
+    .flatMap(([dayKey, daySchedules]) => {
+      const sorted = [...daySchedules].sort((first, second) => (
+        new Date(first.start_time).getTime() - new Date(second.start_time).getTime()
+        || new Date(first.end_time).getTime() - new Date(second.end_time).getTime()
+        || Number(first.id) - Number(second.id)
+      ));
+      const groups = [];
+
+      sorted.forEach((schedule) => {
+        const startTime = new Date(schedule.start_time).getTime();
+        const endTime = new Date(schedule.end_time).getTime();
+        const current = groups.at(-1);
+
+        if (!current || !Number.isFinite(startTime) || startTime >= current.endTimestamp) {
+          groups.push({
+            id: `schedule-group-${dayKey}-${schedule.id}`,
+            start_time: schedule.start_time,
+            end_time: schedule.end_time,
+            endTimestamp: endTime,
+            schedules: [schedule],
+          });
+          return;
+        }
+
+        current.schedules.push(schedule);
+        if (endTime > current.endTimestamp) {
+          current.end_time = schedule.end_time;
+          current.endTimestamp = endTime;
+        }
+      });
+
+      return groups.map(({ endTimestamp: _endTimestamp, ...group }) => group);
+    });
 }

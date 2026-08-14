@@ -25,6 +25,7 @@ export default {
     scheduleDetails: 'Schedule details', createSchedule: 'Create schedule', editSchedule: 'Edit schedule',
     unexpectedError: 'Something went wrong', unexpectedErrorMessage: 'The application could not render this screen.', reload: 'Reload application',
     today: 'Today', previous: 'Previous', next: 'Next', day: 'Day', week: 'Week', month: 'Month',
+    simultaneousLessons: '{{count}} simultaneous lessons', openSimultaneousLessons: 'Open {{count}} simultaneous lessons at {{time}}',
     filterCourse: 'Filter by course', filterClass: 'Filter by class', filterTeacher: 'Filter by teacher',
     retry: 'Retry', search: 'Search name or email', yes: 'Yes', no: 'No', sort: 'Sort', ascending: 'Ascending', descending: 'Descending', createdOrder: 'Creation order', systemRole: 'System role', toggleSidebar: 'Toggle sidebar',
     resetPassword: 'Reset password', newPassword: 'New password', confirmPassword: 'Confirm password', currentPassword: 'Current password', changePassword: 'Change password', passwordChanged: 'Password changed. Sign in again.', passwordResetSuccess: 'Your password has been reset.',

@@ -29,7 +29,15 @@ vi.mock('@fullcalendar/react', async () => {
         next: () => props.datesSet({ startStr: '2026-08-10T00:00:00', endStr: '2026-08-17T00:00:00', view: { title: '10–16 August 2026' } }),
         today: vi.fn(),
       }) }));
-      return <button type="button" data-initial-view={props.initialView} data-event-min-height={String(props.eventMinHeight)} data-slot-event-overlap={String(props.slotEventOverlap)} onClick={() => props.eventClick({ event: { id: '1' } })}>Open lesson</button>;
+      return <button
+        type="button"
+        data-initial-view={props.initialView}
+        data-event-min-height={String(props.eventMinHeight)}
+        data-slot-event-overlap={String(props.slotEventOverlap)}
+        data-event-count={String(props.events.length)}
+        data-group-count={String(props.events.filter((event) => event.extendedProps?.isScheduleGroup).length)}
+        onClick={() => props.eventClick({ event: { id: '1', extendedProps: {} } })}
+      >Open lesson</button>;
     }),
   };
 });
@@ -133,6 +141,33 @@ describe('SchedulesPage lesson modal', () => {
     await waitFor(() => expect(getSchedules).toHaveBeenCalledTimes(1));
     expect(calendar).toHaveAttribute('data-slot-event-overlap', 'false');
     expect(calendar).toHaveAttribute('data-event-min-height', '24');
+  });
+
+  it('groups overlapping lessons only for an admin in the weekly view', async () => {
+    const overlappingSchedule = {
+      ...schedule,
+      id: 2,
+      class_id: 2,
+      class_name: 'Science',
+      teacher_id: 3,
+      teacher_name: 'Second Teacher',
+    };
+    getSchedules.mockResolvedValueOnce([schedule, overlappingSchedule]);
+    renderPage();
+
+    const calendar = await screen.findByRole('button', { name: 'Open lesson' });
+    await waitFor(() => expect(calendar).toHaveAttribute('data-event-count', '1'));
+    expect(calendar).toHaveAttribute('data-group-count', '1');
+  });
+
+  it('keeps overlapping lessons separate for a student weekly view', async () => {
+    currentUser = { id: 7, name: 'Student One', role_name: 'student' };
+    getSchedules.mockResolvedValueOnce([schedule, { ...schedule, id: 2 }]);
+    renderPage();
+
+    const calendar = await screen.findByRole('button', { name: 'Open lesson' });
+    await waitFor(() => expect(calendar).toHaveAttribute('data-event-count', '2'));
+    expect(calendar).toHaveAttribute('data-group-count', '0');
   });
 
   it('keeps the calendar mounted while loading a newly navigated date range', async () => {

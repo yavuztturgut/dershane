@@ -26,12 +26,13 @@ import { queryKeys } from '../../../shared/query/query-keys';
 import { cachePolicy } from '../../../shared/query/cache-policy';
 import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
 import { schedulesApi } from '../schedules.api';
-import { getCourseColor, getInitialVisibleRange } from '../schedule.utils';
+import { getCourseColor, getInitialVisibleRange, groupOverlappingSchedules } from '../schedule.utils';
 import { AttendanceEditor } from '../../attendance/AttendanceEditor/AttendanceEditor';
 import { attendanceApi } from '../../attendance/attendance.api';
 import styles from './SchedulesPage.module.css';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { ScheduleEvent } from '../ScheduleEvent/ScheduleEvent';
+import { ScheduleGroupEvent } from '../ScheduleGroupEvent/ScheduleGroupEvent';
 import { ScheduleDetails } from '../ScheduleDetails/ScheduleDetails';
 import { ScheduleFilters } from '../ScheduleFilters/ScheduleFilters';
 import { ScheduleFormFields } from '../ScheduleFormFields/ScheduleFormFields';
@@ -192,15 +193,39 @@ export function SchedulesPage() {
   const courseOptions = lookupsQuery.data?.courses.map((course) => ({ value: String(course.id), label: course.name })) || [];
   const classOptions = lookupsQuery.data?.classes.map((classItem) => ({ value: String(classItem.id), label: classItem.name })) || [];
   const teacherOptions = lookupsQuery.data?.teachers.map((teacher) => ({ value: String(teacher.id), label: teacher.name })) || [];
-  const events = useMemo(() => (schedulesQuery.data || []).map((schedule) => ({
-    id: String(schedule.id),
-    title: schedule.course_name,
-    start: instantToIstanbulCalendarDateTime(schedule.start_time),
-    end: instantToIstanbulCalendarDateTime(schedule.end_time),
-    backgroundColor: getCourseColor(schedule.course_id),
-    borderColor: getCourseColor(schedule.course_id),
-    extendedProps: schedule,
-  })), [schedulesQuery.data]);
+  const events = useMemo(() => {
+    const schedules = schedulesQuery.data || [];
+    const scheduleEvent = (schedule) => ({
+      id: String(schedule.id),
+      title: schedule.course_name,
+      start: instantToIstanbulCalendarDateTime(schedule.start_time),
+      end: instantToIstanbulCalendarDateTime(schedule.end_time),
+      backgroundColor: getCourseColor(schedule.course_id),
+      borderColor: getCourseColor(schedule.course_id),
+      extendedProps: schedule,
+    });
+
+    if (!isAdmin || activeView !== 'timeGridWeek') return schedules.map(scheduleEvent);
+
+    return groupOverlappingSchedules(schedules).map((group) => {
+      if (group.schedules.length === 1) return scheduleEvent(group.schedules[0]);
+
+      return {
+        id: group.id,
+        title: t('simultaneousLessons', { count: group.schedules.length }),
+        start: instantToIstanbulCalendarDateTime(group.start_time),
+        end: instantToIstanbulCalendarDateTime(group.end_time),
+        backgroundColor: '#334155',
+        borderColor: '#334155',
+        extendedProps: {
+          isScheduleGroup: true,
+          schedules: group.schedules,
+          start_time: group.start_time,
+          end_time: group.end_time,
+        },
+      };
+    });
+  }, [activeView, isAdmin, schedulesQuery.data, t]);
 
   function changeView(view) {
     setActiveView(view);
@@ -371,8 +396,12 @@ export function SchedulesPage() {
             events={events}
             selectable={isAdmin}
             select={handleSelect}
-            eventClick={(info) => openEdit(Number(info.event.id))}
-            eventContent={(info) => <ScheduleEvent event={info.event} />}
+            eventClick={(info) => {
+              if (!info.event.extendedProps?.isScheduleGroup) openEdit(Number(info.event.id));
+            }}
+            eventContent={(info) => info.event.extendedProps.isScheduleGroup
+              ? <ScheduleGroupEvent event={info.event} locale={i18n.language} onSelectSchedule={openEdit} t={t} />
+              : <ScheduleEvent event={info.event} />}
             datesSet={(info) => {
               setDateTitle(info.view.title);
               const nextRange = { start: istanbulWallClockToIso(info.start || info.startStr), end: istanbulWallClockToIso(info.end || info.endStr) };
