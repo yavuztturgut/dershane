@@ -1,0 +1,33 @@
+.bulkBar {
+  position: fixed;
+  z-index: 190;
+  inset-inline-start: calc(var(--app-shell-navbar-offset, 0rem) + var(--app-shell-padding, 1rem));
+  inset-inline-end: var(--app-shell-padding, 1rem);
+  bottom: max(var(--app-shell-padding, 1rem), env(safe-area-inset-bottom));
+  padding: var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-blue-2);
+  border-radius: var(--mantine-radius-md);
+  background: var(--mantine-color-blue-0);
+  box-shadow: var(--mantine-shadow-lg);
+}
+
+.bulkBarSpacer {
+  height: 6rem;
+}
+
+:global([data-mantine-color-scheme='dark']) .bulkBar {
+  border-color: var(--mantine-color-blue-8);
+  background: var(--mantine-color-dark-6);
+}
+
+@media (max-width: 48rem) {
+  .bulkBar {
+    inset-inline: var(--mantine-spacing-xs);
+    bottom: max(var(--mantine-spacing-xs), env(safe-area-inset-bottom));
+    padding: var(--mantine-spacing-sm);
+  }
+
+  .bulkBarSpacer {
+    height: 8rem;
+  }
+}

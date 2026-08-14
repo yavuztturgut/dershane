@@ -5,6 +5,10 @@ import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const usersPageCss = readFileSync(resolve(process.cwd(), 'src/features/users/UsersPage/UsersPage.module.css'), 'utf8');
 
 const lookups = {
   roles: [{ id: 1, name: 'admin' }, { id: 2, name: 'teacher' }, { id: 3, name: 'student' }],
@@ -37,6 +41,11 @@ describe('UsersPage filtering', () => {
     restore.mockClear();
     previewBulk.mockClear();
     applyBulk.mockClear();
+  });
+
+  it('keeps the bulk action bar fixed at the bottom of the viewport', () => {
+    expect(usersPageCss).toContain('position: fixed');
+    expect(usersPageCss).toContain('bottom: max(');
   });
 
   it('keeps the previous users visible without a spinner while a filter request is pending', async () => {
