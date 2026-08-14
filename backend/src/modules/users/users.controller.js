@@ -42,6 +42,14 @@ async function restoreUser(req, res) {
     res.json({ message: 'User restored successfully', action: 'restored', user });
 }
 
+async function previewBulkUsers(req, res) {
+    res.json(await usersService.previewBulkUsers(req.body, req.user.id));
+}
+
+async function applyBulkUsers(req, res) {
+    res.json(await usersService.applyBulkUsers(req.body, req.user.id));
+}
+
 module.exports = {
     getUsers,
     getUserOptions,
@@ -49,5 +57,7 @@ module.exports = {
     getUserById,
     updateUser,
     deleteUser,
-    restoreUser
+    restoreUser,
+    previewBulkUsers,
+    applyBulkUsers
 };

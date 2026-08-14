@@ -4,6 +4,8 @@ const createHttpError = require('../../utils/create-http-error');
 const authStateCache = require('../auth/auth-state-cache');
 
 const optionRoles = new Set(['student', 'teacher']);
+const bulkActions = new Set(['activate', 'deactivate', 'assign_class', 'delete', 'restore']);
+const bulkLimit = 1000;
 
 async function getUsers(query = {}) {
     const page = Math.max(1, Number(query.page) || 1);
@@ -141,6 +143,71 @@ async function restoreUser(id) {
     return user;
 }
 
+function normalizeIds(values, field = 'ids') {
+    if (!Array.isArray(values)) throw createHttpError(`${field} must be an array`, 400, 'INVALID_BULK_SELECTION');
+    const ids = [...new Set(values.map(Number))];
+    if (ids.some((id) => !Number.isInteger(id) || id <= 0)) {
+        throw createHttpError(`${field} contains an invalid user id`, 400, 'INVALID_BULK_SELECTION');
+    }
+    return ids;
+}
+
+function normalizeBulkAction(action = {}) {
+    if (!bulkActions.has(action.type)) {
+        throw createHttpError('Invalid bulk action', 400, 'INVALID_BULK_ACTION');
+    }
+    if (action.type !== 'assign_class') return { type: action.type };
+    const classId = Number(action.class_id);
+    if (!Number.isInteger(classId) || classId <= 0) {
+        throw createHttpError('class_id is invalid', 400, 'INVALID_CLASS');
+    }
+    return { type: action.type, class_id: classId };
+}
+
+async function resolveBulkSelection(selector = {}) {
+    if (selector.type === 'ids') {
+        const ids = normalizeIds(selector.ids);
+        if (!ids.length) throw createHttpError('Select at least one user', 400, 'INVALID_BULK_SELECTION');
+        if (ids.length > bulkLimit) throw createHttpError('Bulk selection exceeds 1000 users', 422, 'BULK_SELECTION_LIMIT_EXCEEDED');
+        return ids;
+    }
+    if (selector.type !== 'filter') throw createHttpError('Invalid bulk selector', 400, 'INVALID_BULK_SELECTION');
+
+    const source = selector.filters || {};
+    const filters = { search: String(source.search || '').trim() };
+    for (const key of ['role_id', 'class_id']) {
+        if (source[key] === undefined || source[key] === '') continue;
+        const value = Number(source[key]);
+        if (!Number.isInteger(value) || value <= 0) throw createHttpError(`${key} is invalid`, 400, 'INVALID_BULK_SELECTION');
+        filters[key] = value;
+    }
+    if (source.status !== undefined && source.status !== '') {
+        filters.status = Number(source.status);
+        if (![-1, 0, 1].includes(filters.status)) throw createHttpError('status is invalid', 400, 'INVALID_USER_STATUS');
+    }
+    filters.excludedIds = normalizeIds(selector.excluded_ids || [], 'excluded_ids');
+    if (filters.excludedIds.length > bulkLimit) throw createHttpError('Bulk exclusions exceed 1000 users', 422, 'BULK_SELECTION_LIMIT_EXCEEDED');
+    const ids = await usersRepository.findUserIds(filters, bulkLimit + 1);
+    if (!ids.length) throw createHttpError('Select at least one user', 400, 'INVALID_BULK_SELECTION');
+    if (ids.length > bulkLimit) throw createHttpError('Bulk selection exceeds 1000 users', 422, 'BULK_SELECTION_LIMIT_EXCEEDED');
+    return ids;
+}
+
+async function previewBulkUsers(data, actorId) {
+    const action = normalizeBulkAction(data?.action);
+    const ids = await resolveBulkSelection(data?.selector);
+    const result = await usersRepository.previewBulkUsers(ids, action, actorId);
+    return { ...result, resolved_ids: ids };
+}
+
+async function applyBulkUsers(data, actorId) {
+    const action = normalizeBulkAction(data?.action);
+    const ids = await resolveBulkSelection({ type: 'ids', ids: data?.resolved_ids });
+    const result = await usersRepository.applyBulkUsers(ids, action, actorId);
+    result.applied_ids.forEach((id) => authStateCache.invalidate(id));
+    return { selected: result.selected, applied: result.applied_ids.length, skipped: result.skipped };
+}
+
 module.exports = {
     getUsers,
     getUserOptions,
@@ -148,5 +215,7 @@ module.exports = {
     createUser,
     updateUser,
     deleteUser,
-    restoreUser
+    restoreUser,
+    previewBulkUsers,
+    applyBulkUsers
 };

@@ -15,10 +15,12 @@ vi.mock('../../lookups/use-lookups', () => ({
   useLookups: () => ({ data: lookups, isLoading: false, isError: false }),
 }));
 
-const firstPage = { items: [{ id: 1, name: 'Ada', email: 'ada@example.com', role_id: 1, class_id: null, status: 1 }], page: 1, totalPages: 1 };
+const firstPage = { items: [{ id: 1, name: 'Ada', email: 'ada@example.com', role_id: 1, class_id: null, status: 1 }], page: 1, total: 1, totalPages: 1 };
 const getPage = vi.fn(async () => firstPage);
 const restore = vi.fn(async (id) => ({ action: 'restored', user: { id, status: 1 } }));
-vi.mock('../users.api', () => ({ usersApi: { getPage: (...args) => getPage(...args), getById: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: (...args) => restore(...args) } }));
+const previewBulk = vi.fn(async () => ({ selected: 1, eligible: 1, skipped: 0, resolved_ids: [1] }));
+const applyBulk = vi.fn(async () => ({ selected: 1, applied: 1, skipped: 0 }));
+vi.mock('../users.api', () => ({ usersApi: { getPage: (...args) => getPage(...args), getById: vi.fn(), create: vi.fn(), update: vi.fn(), remove: vi.fn(), restore: (...args) => restore(...args), previewBulk: (...args) => previewBulk(...args), applyBulk: (...args) => applyBulk(...args) } }));
 
 import { UsersPage } from './UsersPage';
 
@@ -33,6 +35,8 @@ describe('UsersPage filtering', () => {
     getPage.mockReset();
     getPage.mockResolvedValue(firstPage);
     restore.mockClear();
+    previewBulk.mockClear();
+    applyBulk.mockClear();
   });
 
   it('keeps the previous users visible without a spinner while a filter request is pending', async () => {
@@ -95,5 +99,33 @@ describe('UsersPage filtering', () => {
     expect(getPage).toHaveBeenLastCalledWith(expect.objectContaining({ status: '-1' }));
     await user.click(restoreButton);
     await waitFor(() => expect(restore.mock.calls[0]?.[0]).toBe(1));
+  });
+
+  it('previews and applies a bulk action to selected users', async () => {
+    renderPage();
+    const user = userEvent.setup();
+    await user.click((await screen.findAllByRole('checkbox', { name: 'Select Ada' }))[0]);
+    await user.click(screen.getByRole('button', { name: 'Bulk actions' }));
+    await user.click(await screen.findByText('Deactivate'));
+
+    expect(await screen.findByText('Eligible: 1')).toBeInTheDocument();
+    expect(previewBulk).toHaveBeenCalledWith({ selector: { type: 'ids', ids: [1] }, action: { type: 'deactivate' } });
+    await user.click(screen.getByRole('button', { name: 'Apply to Eligible' }));
+    await waitFor(() => expect(applyBulk).toHaveBeenCalledWith({ resolved_ids: [1], action: { type: 'deactivate' } }));
+  });
+
+  it('can expand a page selection to all filtered results', async () => {
+    getPage.mockResolvedValueOnce({ ...firstPage, total: 30, totalPages: 2 });
+    renderPage(['/users?role_id=3']);
+    const user = userEvent.setup();
+    await user.click((await screen.findAllByRole('checkbox', { name: 'Select users on this page' }))[0]);
+    await user.click(await screen.findByRole('button', { name: 'Select all 30 matching users' }));
+    await user.click(screen.getByRole('button', { name: 'Bulk actions' }));
+    await user.click(await screen.findByText('Activate'));
+
+    await waitFor(() => expect(previewBulk).toHaveBeenCalledWith({
+      selector: { type: 'filter', filters: { role_id: '3' }, excluded_ids: [] },
+      action: { type: 'activate' },
+    }));
   });
 });

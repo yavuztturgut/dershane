@@ -61,3 +61,29 @@ test('user status filters reject unsupported values', async () => {
         (error) => error.errorCode === 'INVALID_USER_STATUS'
     );
 });
+
+test('bulk preview freezes a normalized filtered selection', async () => {
+    let receivedFilters;
+    let receivedPreview;
+    repository.findUserIds = async (filters) => { receivedFilters = filters; return [3, 8]; };
+    repository.previewBulkUsers = async (ids, action, actorId) => {
+        receivedPreview = { ids, action, actorId };
+        return { selected: 2, eligible: 1, skipped: 1 };
+    };
+
+    const result = await service.previewBulkUsers({
+        selector: { type: 'filter', filters: { search: ' Ada ', role_id: '3', status: '0' }, excluded_ids: ['5'] },
+        action: { type: 'assign_class', class_id: '4' }
+    }, 9);
+
+    assert.deepEqual(receivedFilters, { search: 'Ada', role_id: 3, status: 0, excludedIds: [5] });
+    assert.deepEqual(receivedPreview, { ids: [3, 8], action: { type: 'assign_class', class_id: 4 }, actorId: 9 });
+    assert.deepEqual(result.resolved_ids, [3, 8]);
+});
+
+test('bulk operations reject selections larger than 1000 users', async () => {
+    await assert.rejects(
+        service.previewBulkUsers({ selector: { type: 'ids', ids: Array.from({ length: 1001 }, (_, index) => index + 1) }, action: { type: 'activate' } }, 1),
+        (error) => error.errorCode === 'BULK_SELECTION_LIMIT_EXCEEDED' && error.statusCode === 422
+    );
+});

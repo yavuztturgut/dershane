@@ -8,6 +8,8 @@ const asyncHandler = require('../../middleware/async-handler');
 
 router.get('/', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUsers));
 router.get('/options', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUserOptions));
+router.post('/bulk/preview', authMiddleware, requireRole('admin'), asyncHandler(usersController.previewBulkUsers));
+router.post('/bulk', authMiddleware, requireRole('admin'), asyncHandler(usersController.applyBulkUsers));
 router.get('/:id', authMiddleware, requireRole('admin'), asyncHandler(usersController.getUserById));
 router.post('/', authMiddleware, requireRole('admin'), asyncHandler(usersController.createUser));
 router.put('/:id', authMiddleware, requireRole('admin'), asyncHandler(usersController.updateUser));

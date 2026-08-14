@@ -37,6 +37,32 @@ async function findAllUsers(filters = {}) {
     return { items: result.rows, total: countResult.rows[0].total };
 }
 
+async function findUserIds(filters = {}, limit = 1001) {
+    const params = [];
+    const conditions = [];
+    if (filters.search) {
+        params.push(`%${filters.search}%`);
+        conditions.push(`(u.name ILIKE $${params.length} OR u.email ILIKE $${params.length})`);
+    }
+    for (const [column, value] of [['role_id', filters.role_id], ['class_id', filters.class_id], ['status', filters.status]]) {
+        if (value !== undefined && value !== '') {
+            params.push(value);
+            conditions.push(`u.${column} = $${params.length}`);
+        }
+    }
+    if (filters.status === undefined) conditions.push('u.status <> -1');
+    if (filters.excludedIds?.length) {
+        params.push(filters.excludedIds);
+        conditions.push(`NOT (u.id = ANY($${params.length}::INTEGER[]))`);
+    }
+    params.push(limit);
+    const result = await pool.query(
+        `SELECT u.id FROM users u WHERE ${conditions.join(' AND ')} ORDER BY u.id LIMIT $${params.length}`,
+        params
+    );
+    return result.rows.map((row) => Number(row.id));
+}
+
 async function findRoleNameById(id, db = pool) {
     const result = await db.query('SELECT name FROM roles WHERE id = $1', [id]);
     return result.rows[0]?.name;
@@ -199,8 +225,77 @@ async function restoreUser(id) {
     });
 }
 
+async function getBulkCandidates(ids, action, actorId, db = pool, lock = false) {
+    if (action.type === 'assign_class') {
+        const classResult = await db.query('SELECT id FROM classes WHERE id = $1', [action.class_id]);
+        if (!classResult.rowCount) throw createHttpError('Class not found', 404, 'CLASS_NOT_FOUND');
+    }
+    const result = await db.query(
+        `SELECT u.id, u.role_id, role.name AS role_name, u.password, u.class_id, u.status
+         FROM users u JOIN roles role ON role.id = u.role_id
+         WHERE u.id = ANY($1::INTEGER[]) ORDER BY u.id ${lock ? 'FOR UPDATE OF u' : ''}`,
+        [ids]
+    );
+    let futureTeacherIds = new Set();
+    if (action.type === 'delete') {
+        const teacherIds = result.rows.filter((user) => user.role_name === 'teacher').map((user) => user.id);
+        if (teacherIds.length) {
+            const future = await db.query(
+                'SELECT DISTINCT teacher_id FROM schedules WHERE teacher_id = ANY($1::INTEGER[]) AND start_time > NOW()',
+                [teacherIds]
+            );
+            futureTeacherIds = new Set(future.rows.map((row) => Number(row.teacher_id)));
+        }
+    }
+    const eligible = result.rows.filter((user) => {
+        if (action.type === 'activate') return user.status === 0;
+        if (action.type === 'deactivate') return user.status === 1 && Number(user.id) !== Number(actorId);
+        if (action.type === 'assign_class') return user.status !== -1 && user.role_name === 'student' && Number(user.class_id) !== action.class_id;
+        if (action.type === 'delete') return user.status !== -1 && Number(user.id) !== Number(actorId) && !futureTeacherIds.has(Number(user.id));
+        return action.type === 'restore' && user.status === -1;
+    });
+    return { selected: ids.length, eligible, skipped: ids.length - eligible.length };
+}
+
+async function previewBulkUsers(ids, action, actorId) {
+    const result = await getBulkCandidates(ids, action, actorId);
+    return { selected: result.selected, eligible: result.eligible.length, skipped: result.skipped };
+}
+
+async function applyBulkUsers(ids, action, actorId) {
+    return withTransaction(async (client) => {
+        const result = await getBulkCandidates(ids, action, actorId, client, true);
+        const classIds = result.eligible.flatMap((user) => [user.class_id, action.type === 'assign_class' ? action.class_id : null]);
+        await lockClasses(client, classIds);
+        const appliedIds = [];
+        for (const existing of result.eligible) {
+            const classId = action.type === 'assign_class' ? action.class_id : existing.class_id;
+            const status = action.type === 'activate' || action.type === 'restore' ? 1
+                : action.type === 'deactivate' ? 0
+                    : action.type === 'delete' ? -1 : existing.status;
+            await updateUserById(existing.id, {
+                role_id: existing.role_id,
+                class_id: classId,
+                password: existing.password,
+                status,
+                passwordChanged: false
+            }, client);
+            if (action.type === 'delete') {
+                await client.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [existing.id]);
+            }
+            await rosterRepository.syncStudentFutureSchedules(client, existing.id, {
+                roleName: existing.role_name,
+                classId,
+                isActive: status === 1
+            });
+            appliedIds.push(Number(existing.id));
+        }
+        return { selected: result.selected, applied_ids: appliedIds, skipped: result.skipped };
+    });
+}
+
 module.exports = {
     findAllUsers, findUserOptions, findUserById, findUserWithPasswordById, insertUser,
     updateUserById, findRoleNameById, insertUserWithRoster, updateUserWithRoster,
-    archiveUser, restoreUser
+    archiveUser, restoreUser, findUserIds, previewBulkUsers, applyBulkUsers
 };

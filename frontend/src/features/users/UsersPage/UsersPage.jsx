@@ -1,4 +1,4 @@
-import { ActionIcon, Alert, Button, Group, Pagination, TextInput } from '@mantine/core';
+import { ActionIcon, Alert, Button, Group, Menu, Pagination, Select, Stack, Text, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDebouncedValue } from '@mantine/hooks';
 import { IconEdit, IconRestore, IconTrash } from '@tabler/icons-react';
@@ -37,11 +37,19 @@ export function UsersPage() {
   const [debouncedSearch] = useDebouncedValue(searchInput, 300);
   const [opened, setOpened] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectionMode, setSelectionMode] = useState('ids');
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [excludedIds, setExcludedIds] = useState(() => new Set());
+  const [bulkOpened, setBulkOpened] = useState(false);
+  const [bulkAction, setBulkAction] = useState(null);
+  const [bulkClassId, setBulkClassId] = useState('');
+  const [bulkPreview, setBulkPreview] = useState(null);
   const handledDashboardActionKey = useRef(null);
   const lookupsQuery = useLookups();
   const roles = lookupsQuery.data?.roles;
   const classes = lookupsQuery.data?.classes;
   const queryParams = Object.fromEntries(searchParams.entries());
+  const selectionKey = JSON.stringify(Object.fromEntries([...searchParams.entries()].filter(([key]) => key !== 'page')));
   const usersQueryOptions = {
     queryKey: queryKeys.users.list(queryParams),
     queryFn: () => usersApi.getPage(queryParams),
@@ -49,6 +57,7 @@ export function UsersPage() {
     staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
+  const pageData = usersQuery.data;
   const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId), staleTime: cachePolicy.operational });
   const form = useForm({
     initialValues,
@@ -70,6 +79,11 @@ export function UsersPage() {
     setSearchParams((current) => { const next = new URLSearchParams(current); if (debouncedSearch) next.set('search', debouncedSearch); else next.delete('search'); next.set('page', '1'); return next; });
   }, [debouncedSearch, searchParamValue, setSearchParams]);
   useEffect(() => { setSearchInput(searchParamValue); }, [searchParamValue]);
+  useEffect(() => {
+    setSelectionMode('ids');
+    setSelectedIds(new Set());
+    setExcludedIds(new Set());
+  }, [selectionKey]);
   useEffect(() => {
     const action = location.state?.dashboardAction;
     if (action?.type !== 'create-user' || !roles) return;
@@ -115,6 +129,30 @@ export function UsersPage() {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
   }, onError: (error) => notifyError(getErrorMessage(error)) });
 
+  const invalidateUserData = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.users.allOptions() });
+    queryClient.invalidateQueries({ queryKey: queryKeys.lookups.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.summary });
+  };
+  const previewBulkMutation = useMutation({
+    mutationFn: (data) => usersApi.previewBulk(data),
+    onSuccess: setBulkPreview,
+    onError: (error) => notifyError(getErrorMessage(error)),
+  });
+  const applyBulkMutation = useMutation({
+    mutationFn: (data) => usersApi.applyBulk(data),
+    onSuccess: (result) => {
+      notifySuccess(t('bulkResult', result));
+      setBulkOpened(false);
+      setSelectionMode('ids');
+      setSelectedIds(new Set());
+      setExcludedIds(new Set());
+      invalidateUserData();
+    },
+    onError: (error) => notifyError(getErrorMessage(error)),
+  });
+
   const roleName = (id) => roles?.find((role) => role.id === id)?.name || id;
   const className = (id) => classes?.find((item) => item.id === id)?.name || '-';
   const roleOptions = roles?.map((role) => ({ value: String(role.id), label: role.name })) || [];
@@ -122,6 +160,88 @@ export function UsersPage() {
   const setFilter = (key, value) => setSearchParams((current) => { const next = new URLSearchParams(current); if (value) next.set(key, value); else next.delete(key); if (key !== 'page') next.set('page', '1'); return next; });
   const activeFilterCount = ['role_id', 'class_id', 'status', 'sort', 'order'].filter((key) => searchParams.has(key)).length;
   const clearFilters = () => setSearchParams((current) => { const next = new URLSearchParams(); if (current.get('search')) next.set('search', current.get('search')); return next; });
+
+  const isSelected = (id) => selectionMode === 'filter' ? !excludedIds.has(id) : selectedIds.has(id);
+  const selectedCount = selectionMode === 'filter' ? Math.max(0, pageData?.total - excludedIds.size) : selectedIds.size;
+  const pageIds = (usersQuery.data?.items || []).map((user) => user.id);
+  const selectedOnPage = pageIds.filter(isSelected).length;
+  const allPageSelected = Boolean(pageIds.length) && selectedOnPage === pageIds.length;
+  const pageIndeterminate = selectedOnPage > 0 && !allPageSelected;
+
+  function clearSelection() {
+    setSelectionMode('ids');
+    setSelectedIds(new Set());
+    setExcludedIds(new Set());
+  }
+
+  function toggleUser(id) {
+    if (selectionMode === 'filter') {
+      setExcludedIds((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next; });
+      return;
+    }
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else if (next.size < 1000) next.add(id);
+      else notifyError(t('bulkLimitExceeded'));
+      return next;
+    });
+  }
+
+  function togglePage() {
+    if (selectionMode === 'filter') {
+      setExcludedIds((current) => {
+        const next = new Set(current);
+        pageIds.forEach((id) => { if (allPageSelected) next.add(id); else next.delete(id); });
+        return next;
+      });
+      return;
+    }
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (allPageSelected) pageIds.forEach((id) => next.delete(id));
+      else {
+        if (new Set([...next, ...pageIds]).size > 1000) { notifyError(t('bulkLimitExceeded')); return current; }
+        pageIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  }
+
+  function selectAllResults() {
+    if (pageData.total > 1000) { notifyError(t('bulkLimitExceeded')); return; }
+    setSelectionMode('filter');
+    setSelectedIds(new Set());
+    setExcludedIds(new Set());
+  }
+
+  function bulkSelector() {
+    if (selectionMode === 'ids') return { type: 'ids', ids: [...selectedIds] };
+    const filters = Object.fromEntries([...searchParams.entries()].filter(([key]) => !['page', 'sort', 'order'].includes(key)));
+    return { type: 'filter', filters, excluded_ids: [...excludedIds] };
+  }
+
+  function actionPayload(type, classId = bulkClassId) {
+    return type === 'assign_class' ? { type, class_id: Number(classId) } : { type };
+  }
+
+  function startBulkAction(type) {
+    setBulkAction(type);
+    setBulkClassId('');
+    setBulkPreview(null);
+    setBulkOpened(true);
+    if (type !== 'assign_class') previewBulkMutation.mutate({ selector: bulkSelector(), action: actionPayload(type) });
+  }
+
+  function previewClassAction(value) {
+    setBulkClassId(value || '');
+    setBulkPreview(null);
+    if (value) previewBulkMutation.mutate({ selector: bulkSelector(), action: actionPayload('assign_class', value) });
+  }
+
+  function applyBulkAction() {
+    applyBulkMutation.mutate({ resolved_ids: bulkPreview.resolved_ids, action: actionPayload(bulkAction) });
+  }
 
   function openCreate() { setEditingId(null); form.setValues(initialValues); setOpened(true); }
   function openEdit(user) {
@@ -137,8 +257,6 @@ export function UsersPage() {
     { query: lookupsQuery, options: getLookupsQueryOptions() },
   ]);
   if ((usersQuery.isError && !usersQuery.data) || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
-  const pageData = usersQuery.data;
-
   const rowActions = (user) => user.status === -1
     ? <ActionIcon color="green" variant="subtle" loading={restoreMutation.isPending && restoreMutation.variables === user.id} onClick={() => restoreMutation.mutate(user.id)} aria-label={t('restore')}><IconRestore size={18} /></ActionIcon>
     : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
@@ -146,8 +264,17 @@ export function UsersPage() {
 
   return <PageContainer><PageHeader title={t('users')} description={t('usersDescription')} onCreate={openCreate} createLabel={t('create')} />
     <ResponsiveFilterPanel primary={<TextInput placeholder={t('search')} value={searchInput} onChange={(event) => setSearchInput(event.currentTarget.value)} />} activeCount={activeFilterCount} onClear={clearFilters}>{filterFields}</ResponsiveFilterPanel>
-    <div aria-busy={usersQuery.isFetching}>{!pageData.items.length ? <EmptyState message={t('noData')} actionLabel={t('clearFilters')} onAction={activeFilterCount ? clearFilters : undefined} /> : <UserList users={pageData.items} roleName={roleName} className={className} actions={rowActions} t={t} />}</div>
+    {selectedCount > 0 && <Alert mb="sm" color="blue"><Group justify="space-between" gap="sm"><Text fw={600}>{t('usersSelected', { count: selectedCount })}</Text><Group gap="xs"><Menu shadow="md"><Menu.Target><Button>{t('bulkActions')}</Button></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => startBulkAction('activate')}>{t('bulkActivate')}</Menu.Item><Menu.Item onClick={() => startBulkAction('deactivate')}>{t('bulkDeactivate')}</Menu.Item><Menu.Item onClick={() => startBulkAction('assign_class')}>{t('bulkAssignClass')}</Menu.Item><Menu.Item color="red" onClick={() => startBulkAction('delete')}>{t('bulkDelete')}</Menu.Item><Menu.Item onClick={() => startBulkAction('restore')}>{t('bulkRestore')}</Menu.Item></Menu.Dropdown></Menu><Button variant="subtle" onClick={clearSelection}>{t('clearSelection')}</Button></Group></Group></Alert>}
+    {selectionMode === 'ids' && allPageSelected && pageData.total > pageIds.length && <Alert mb="sm" color="blue"><Group justify="center" gap="xs"><Text>{t('pageUsersSelected', { count: pageIds.length })}</Text><Button variant="subtle" onClick={selectAllResults}>{t('selectAllResults', { count: pageData.total })}</Button></Group></Alert>}
+    {selectionMode === 'filter' && <Alert mb="sm" color="blue" ta="center">{t('allResultsSelected', { count: selectedCount })}</Alert>}
+    <div aria-busy={usersQuery.isFetching}>{!pageData.items.length ? <EmptyState message={t('noData')} actionLabel={t('clearFilters')} onAction={activeFilterCount ? clearFilters : undefined} /> : <UserList users={pageData.items} roleName={roleName} className={className} actions={rowActions} isSelected={isSelected} onToggle={toggleUser} allPageSelected={allPageSelected} pageIndeterminate={pageIndeterminate} onTogglePage={togglePage} t={t} />}</div>
     {pageData.totalPages > 1 && <Group justify="center" mt="lg"><Pagination total={pageData.totalPages} value={pageData.page} onChange={(page) => setFilter('page', String(page))} /></Group>}
     <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>{detailQuery.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : <UserForm form={form} editingId={editingId} roleOptions={roleOptions} classOptions={classOptions} saving={saveMutation.isPending} onCancel={() => setOpened(false)} onSubmit={(values) => saveMutation.mutate(values)} t={t} />}</AppModal>
+    <AppModal opened={bulkOpened} onClose={() => { if (!applyBulkMutation.isPending) setBulkOpened(false); }} title={t(`bulkActionTitles.${bulkAction || 'activate'}`)}><Stack>
+      {bulkAction === 'assign_class' && <Select label={t('class')} placeholder={t('selectClass')} data={classOptions} value={bulkClassId || null} disabled={previewBulkMutation.isPending} onChange={previewClassAction} />}
+      {previewBulkMutation.isPending && <Text c="dimmed">{t('bulkChecking')}</Text>}
+      {bulkPreview && <><Text>{t('bulkSelectedCount', { count: bulkPreview.selected })}</Text><Text c="green">{t('bulkEligibleCount', { count: bulkPreview.eligible })}</Text><Text c="dimmed">{t('bulkSkippedCount', { count: bulkPreview.skipped })}</Text></>}
+      <Group justify="flex-end"><Button variant="default" disabled={applyBulkMutation.isPending} onClick={() => setBulkOpened(false)}>{t('cancelBulk')}</Button><Button color={bulkAction === 'delete' ? 'red' : undefined} disabled={!bulkPreview?.eligible} loading={applyBulkMutation.isPending} onClick={applyBulkAction}>{t('applyEligible')}</Button></Group>
+    </Stack></AppModal>
   </PageContainer>;
 }

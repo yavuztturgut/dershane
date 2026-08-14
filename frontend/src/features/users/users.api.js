@@ -8,4 +8,6 @@ export const usersApi = {
   update: async (id, data) => (await apiClient.put(`/users/${id}`, data)).data,
   remove: async (id) => (await apiClient.delete(`/users/${id}`)).data,
   restore: async (id) => (await apiClient.patch(`/users/${id}/restore`)).data,
+  previewBulk: async (data) => (await apiClient.post('/users/bulk/preview', data)).data,
+  applyBulk: async (data) => (await apiClient.post('/users/bulk', data)).data,
 };
