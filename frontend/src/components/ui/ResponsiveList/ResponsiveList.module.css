@@ -5,14 +5,7 @@
 }
 
 .mobile {
-  display: none;
-}
-
-@media (max-width: 48rem) {
-  .desktop { display: none; }
-  .mobile {
-    display: grid;
-    width: 100%;
-    gap: var(--mantine-spacing-sm);
-  }
+  display: grid;
+  width: 100%;
+  gap: var(--mantine-spacing-sm);
 }

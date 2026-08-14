@@ -11,7 +11,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import trLocale from '@fullcalendar/core/locales/tr';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -24,10 +24,9 @@ import { notifyError, notifySuccess } from '../../../shared/notifications/notifi
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { cachePolicy } from '../../../shared/query/cache-policy';
-import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
+import { useLookups } from '../../lookups/use-lookups';
 import { schedulesApi } from '../schedules.api';
 import { getCourseColor, getInitialVisibleRange, groupOverlappingSchedules } from '../schedule.utils';
-import { AttendanceEditor } from '../../attendance/AttendanceEditor/AttendanceEditor';
 import { attendanceApi } from '../../attendance/attendance.api';
 import styles from './SchedulesPage.module.css';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
@@ -40,7 +39,10 @@ import {
   formatIstanbulDateTime, formatIstanbulTime, instantToIstanbulCalendarDateTime,
   instantToIstanbulPickerDate, istanbulWallClockToInstant, istanbulWallClockToIso,
 } from '../../../shared/time/istanbul-date-time';
-import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
+
+const loadAttendanceEditor = () => import('../../attendance/AttendanceEditor/AttendanceEditor');
+const LazyAttendanceEditor = lazy(() => loadAttendanceEditor().then((module) => ({ default: module.AttendanceEditor })));
 
 const initialValues = {
   course_id: '', class_id: '', teacher_id: '', start_time: null, end_time: null,
@@ -252,6 +254,7 @@ export function SchedulesPage() {
 
     try {
       await Promise.all([
+        ...(canManageAttendance ? [loadAttendanceEditor()] : []),
         ...(!schedule ? [modalQueryClient.ensureQueryData({ queryKey: queryKeys.schedules.detail(id), queryFn: () => schedulesApi.getById(id), staleTime: cachePolicy.operational })] : []),
         ...(canManageAttendance ? [modalQueryClient.ensureQueryData({
           queryKey: queryKeys.attendance.schedule(id),
@@ -335,11 +338,6 @@ export function SchedulesPage() {
     else setIsEditing(false);
   }
 
-  useSuspendingQueries([
-    { query: schedulesQuery, options: schedulesQueryOptions },
-    { query: lookupsQuery, options: getLookupsQueryOptions(isAdmin) },
-  ]);
-  if ((schedulesQuery.isError && !schedulesQuery.data) || (isAdmin && lookupsQuery.isError)) return <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(schedulesQuery.error || lookupsQuery.error)}</Alert>;
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
   const filterControls = <ScheduleFilters filters={filters} setFilters={setFilters} courseOptions={courseOptions} classOptions={classOptions} teacherOptions={teacherOptions} t={t} />;
 
@@ -350,7 +348,10 @@ export function SchedulesPage() {
         {isAdmin && <Button leftSection={<IconPlus size={16} />} onClick={openCreate}>{t('createSchedule')}</Button>}
       </div>
 
+      {isAdmin && lookupsQuery.isError && <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(lookupsQuery.error)}</Alert>}
+
       <section className={styles.calendarSurface} aria-label={t(isAdmin ? 'schedules' : 'mySchedule')} aria-busy={schedulesQuery.isFetching}>
+        {schedulesQuery.isLoading && !schedulesQuery.data ? <PageLoader /> : schedulesQuery.isError && !schedulesQuery.data ? <Alert icon={<IconAlertCircle size={18} />} color="red">{getErrorMessage(schedulesQuery.error)}</Alert> : <>
         <div className={styles.calendarToolbar}>
           <Group gap="xs" className={styles.toolbarActions}>
             <ActionIcon variant="default" size="lg" onClick={() => moveCalendar('prev')} aria-label={t('previous')}><IconChevronLeft size={18} /></ActionIcon>
@@ -410,6 +411,7 @@ export function SchedulesPage() {
             height="auto"
           />
         </div>
+        </>}
       </section>
 
       {editingId && canManageAttendance ? (
@@ -434,15 +436,15 @@ export function SchedulesPage() {
               <Group><Button variant="default" onClick={requestExitEditing}>{t('cancel')}</Button><Button type="submit" form="schedule-edit-form" loading={saveMutation.isPending}>{t('save')}</Button></Group>
             </Group>
           ) : <Group justify="flex-end"><Button onClick={() => setIsEditing(true)}>{t('edit')}</Button></Group>)}
-          rightContent={(
-            <AttendanceEditor
+          rightContent={<Suspense fallback={<PageLoader />}>
+            <LazyAttendanceEditor
               ref={attendanceEditorRef}
               scheduleId={editingId}
               onDirtyChange={handleAttendanceDirty}
               onSavingChange={handleAttendanceSaving}
               onCanSaveChange={handleAttendanceCanSave}
             />
-          )}
+          </Suspense>}
           rightFooter={<Group justify="flex-end"><Button disabled={!attendanceCanSave} onClick={() => attendanceEditorRef.current?.save()} loading={attendanceSaving}>{t('saveAttendance')}</Button></Group>}
         />
       ) : (

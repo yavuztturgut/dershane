@@ -30,38 +30,51 @@ async function findScheduleAttendance(scheduleId, studentId) {
     return result.rows;
 }
 
-async function upsertAttendance(scheduleId, records, recordedBy) {
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-        for (const record of records) {
-            await client.query(
-                `INSERT INTO attendance_records (schedule_id, student_id, status, recorded_by)
-                 VALUES ($1, $2, $3, $4)
-                 ON CONFLICT (schedule_id, student_id) DO UPDATE
-                 SET status = EXCLUDED.status, recorded_by = EXCLUDED.recorded_by, updated_at = NOW()`,
-                [scheduleId, record.student_id, record.status, recordedBy]
-            );
-        }
-        await client.query('COMMIT');
-    } catch (error) {
-        await client.query('ROLLBACK');
-        throw error;
-    } finally {
-        client.release();
-    }
+async function upsertAttendance(scheduleId, records, recordedBy, db = pool) {
+    const result = await db.query(
+        `WITH input AS (
+             SELECT DISTINCT ON (student_id) student_id, status
+             FROM ROWS FROM (
+                 jsonb_to_recordset($2::jsonb) AS (student_id INTEGER, status VARCHAR(16))
+             ) WITH ORDINALITY AS record(student_id, status, position)
+             ORDER BY student_id, position DESC
+         ),
+         invalid AS (
+             SELECT input.student_id
+             FROM input
+             LEFT JOIN schedule_students roster
+               ON roster.schedule_id = $1 AND roster.student_id = input.student_id
+             WHERE roster.student_id IS NULL
+         ),
+         upserted AS (
+             INSERT INTO attendance_records (schedule_id, student_id, status, recorded_by)
+             SELECT $1, input.student_id, input.status, $3
+             FROM input
+             WHERE NOT EXISTS (SELECT 1 FROM invalid)
+             ON CONFLICT (schedule_id, student_id) DO UPDATE
+             SET status = EXCLUDED.status,
+                 recorded_by = EXCLUDED.recorded_by,
+                 updated_at = NOW()
+             RETURNING student_id
+         )
+         SELECT COALESCE((SELECT json_agg(student_id ORDER BY student_id) FROM invalid), '[]'::json) AS invalid_student_ids,
+                (SELECT COUNT(*)::INTEGER FROM upserted) AS updated_count`,
+        [scheduleId, JSON.stringify(records), recordedBy]
+    );
+
+    return result.rows[0];
 }
 
 async function findStudentAttendance(studentId, filters) {
     const params = [studentId];
     const conditions = ['roster.student_id = u.id', 'roster.schedule_id = s.id', 's.end_time <= NOW()'];
-    if (filters.start) {
-        params.push(filters.start);
-        conditions.push(`s.end_time >= ($${params.length}::date::timestamp AT TIME ZONE 'Europe/Istanbul')`);
+    if (filters.start_at) {
+        params.push(filters.start_at);
+        conditions.push(`s.end_time >= $${params.length}`);
     }
-    if (filters.end) {
-        params.push(filters.end);
-        conditions.push(`s.start_time < (($${params.length}::date + 1)::timestamp AT TIME ZONE 'Europe/Istanbul')`);
+    if (filters.end_before) {
+        params.push(filters.end_before);
+        conditions.push(`s.start_time < $${params.length}`);
     }
     const result = await pool.query(
         `SELECT s.id AS schedule_id, s.start_time, s.end_time, co.name AS course_name,
@@ -86,13 +99,13 @@ async function findReport(filters) {
     for (const [column, value] of [['s.class_id', filters.class_id], ['ar.student_id', filters.student_id]]) {
         if (value) { params.push(value); conditions.push(`${column} = $${params.length}`); }
     }
-    if (filters.start) {
-        params.push(filters.start);
-        conditions.push(`s.end_time >= ($${params.length}::date::timestamp AT TIME ZONE 'Europe/Istanbul')`);
+    if (filters.start_at) {
+        params.push(filters.start_at);
+        conditions.push(`s.end_time >= $${params.length}`);
     }
-    if (filters.end) {
-        params.push(filters.end);
-        conditions.push(`s.start_time < (($${params.length}::date + 1)::timestamp AT TIME ZONE 'Europe/Istanbul')`);
+    if (filters.end_before) {
+        params.push(filters.end_before);
+        conditions.push(`s.start_time < $${params.length}`);
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const countParams = [...params];
@@ -131,13 +144,13 @@ function dailyReportFilters(filters, params) {
               AND selected_roster.student_id = $${params.length}
         )`);
     }
-    if (filters.start) {
-        params.push(filters.start);
-        conditions.push(`(s.start_time AT TIME ZONE 'Europe/Istanbul')::date >= $${params.length}::date`);
+    if (filters.start_at) {
+        params.push(filters.start_at);
+        conditions.push(`s.start_time >= $${params.length}`);
     }
-    if (filters.end) {
-        params.push(filters.end);
-        conditions.push(`(s.start_time AT TIME ZONE 'Europe/Istanbul')::date <= $${params.length}::date`);
+    if (filters.end_before) {
+        params.push(filters.end_before);
+        conditions.push(`s.start_time < $${params.length}`);
     }
     return conditions;
 }

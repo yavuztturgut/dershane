@@ -1,4 +1,10 @@
-import '@testing-library/jest-dom/vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { expect } from 'vitest';
+
+// Register the DOM matchers against Vitest's local expect instance in every
+// worker. Relying on the package side-effect made parallel Windows runs
+// intermittently start without matchers such as `toBeInTheDocument`.
+expect.extend(matchers);
 import i18n from '../app/i18n';
 
 i18n.changeLanguage('en');

@@ -20,20 +20,37 @@ test('admin can save valid attendance after the teacher lock', async () => {
         receivedFilters.push(studentId);
         return [{ student_id: 2, student_name: 'Student' }];
     };
-    repository.upsertAttendance = async () => undefined;
+    repository.upsertAttendance = async () => ({ invalid_student_ids: [], updated_count: 1 });
     const result = await service.saveScheduleAttendance(1, [{ student_id: 2, status: 'excused' }], { id: 1, role_name: 'admin' }, { student_id: '2' });
     assert.equal(result.records[0].student_id, 2);
-    assert.deepEqual(receivedFilters, [undefined, 2]);
+    assert.deepEqual(receivedFilters, [2]);
 });
 
 test('attendance rejects students outside the frozen lesson roster', async () => {
     repository.findSchedule = async () => ({ id: 1, teacher_id: 7, start_time: new Date(Date.now() - 60_000), end_time: new Date(Date.now() + 60_000) });
-    repository.findScheduleAttendance = async () => [{ student_id: 2, student_name: 'Roster student' }];
+    repository.upsertAttendance = async () => ({ invalid_student_ids: [3], updated_count: 0 });
 
     await assert.rejects(
         service.saveScheduleAttendance(1, [{ student_id: 3, status: 'present' }], { id: 1, role_name: 'admin' }),
         (error) => error.errorCode === 'INVALID_ATTENDANCE_STUDENT'
     );
+});
+
+test('attendance save deduplicates students with the last submitted status', async () => {
+    repository.findSchedule = async () => ({ id: 1, teacher_id: 7, start_time: new Date(Date.now() - 60_000), end_time: new Date(Date.now() + 60_000) });
+    let savedRecords;
+    repository.upsertAttendance = async (_scheduleId, records) => {
+        savedRecords = records;
+        return { invalid_student_ids: [], updated_count: records.length };
+    };
+    repository.findScheduleAttendance = async () => [{ student_id: 2, status: 'late' }];
+
+    await service.saveScheduleAttendance(1, [
+        { student_id: 2, status: 'present' },
+        { student_id: 2, status: 'late' },
+    ], { id: 1, role_name: 'admin' });
+
+    assert.deepEqual(savedRecords, [{ student_id: 2, status: 'late' }]);
 });
 
 test('admin daily report defaults to seven calendar days and groups lessons without splitting a day', async () => {

@@ -12,7 +12,8 @@ const attendanceCss = readFileSync(resolve(process.cwd(), 'src/features/attendan
 
 vi.mock('../../auth/use-auth', () => ({ useAuth: () => ({ user: { id: 1, role_name: 'admin' } }) }));
 vi.mock('../../lookups/lookups.api', () => ({ lookupsApi: { getAll: vi.fn(async () => ({ roles: [], classes: [{ id: 1, name: 'Class A' }], courses: [], teachers: [] })) } }));
-vi.mock('../../users/users.api', () => ({ usersApi: { getOptions: vi.fn(async () => [{ id: 5, name: 'Ada', class_id: 1 }]) } }));
+const { getUserOptions } = vi.hoisted(() => ({ getUserOptions: vi.fn(async () => [{ id: 5, name: 'Ada', class_id: 1 }]) }));
+vi.mock('../../users/users.api', () => ({ usersApi: { getOptions: getUserOptions } }));
 
 const report = {
   days: [
@@ -54,7 +55,10 @@ function renderPage() {
 }
 
 describe('AttendancePage daily admin report', () => {
-  beforeEach(() => getDailyReport.mockClear());
+  beforeEach(() => {
+    getDailyReport.mockClear();
+    getUserOptions.mockClear();
+  });
   afterEach(cleanup);
 
   it('defines a primary-color top stripe for an active lesson without changing its layout', () => {
@@ -105,8 +109,13 @@ describe('AttendancePage daily admin report', () => {
     const user = userEvent.setup();
     renderPage();
     await user.click(await screen.findByRole('button', { name: /Monday, August 3, 2026/ }));
-    await user.click(screen.getByRole('button', { name: /08:00.*Math/ }));
+    await user.click(await screen.findByRole('button', { name: /08:00.*Math/ }));
     await screen.findByTestId('editor-11');
+    expect(screen.getByPlaceholderText('Student')).toBeDisabled();
+    await user.click(screen.getByPlaceholderText('Class'));
+    await user.click(await screen.findByText('Class A'));
+    await waitFor(() => expect(getUserOptions).toHaveBeenCalledWith({ role: 'student', class_id: '1' }));
+    expect(screen.getByPlaceholderText('Student')).toBeEnabled();
     await user.click(screen.getByPlaceholderText('Student'));
     await user.click(await screen.findByText('Ada'));
 

@@ -87,4 +87,17 @@ function formatIstanbulDateKey(value) {
     return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}`;
 }
 
-module.exports = { BUSINESS_TIME_ZONE, formatIstanbulDateKey, parseIstanbulDateTime };
+function parseIstanbulDateBoundary(value, nextDay = false) {
+    if (typeof value !== 'string') return null;
+    const match = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return null;
+    let parts = { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]), hour: 0, minute: 0, second: 0, millisecond: 0 };
+    if (!hasValidCalendarParts(parts)) return null;
+    if (nextDay) {
+        const next = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+        parts = { year: next.getUTCFullYear(), month: next.getUTCMonth() + 1, day: next.getUTCDate(), hour: 0, minute: 0, second: 0, millisecond: 0 };
+    }
+    return wallClockToDate(parts);
+}
+
+module.exports = { BUSINESS_TIME_ZONE, formatIstanbulDateKey, parseIstanbulDateBoundary, parseIstanbulDateTime };

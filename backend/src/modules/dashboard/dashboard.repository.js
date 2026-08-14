@@ -43,12 +43,24 @@ async function findTodaySchedules() {
 
 async function findWeeklyAttendance() {
     const result = await pool.query(`
-        WITH days AS (
+        WITH bounds AS (
+            SELECT ((NOW() AT TIME ZONE 'Europe/Istanbul')::date - 6)::timestamp AT TIME ZONE 'Europe/Istanbul' AS week_start,
+                   (((NOW() AT TIME ZONE 'Europe/Istanbul')::date + 1)::timestamp AT TIME ZONE 'Europe/Istanbul') AS week_end
+        ),
+        days AS (
             SELECT generate_series(
                 (NOW() AT TIME ZONE 'Europe/Istanbul')::date - 6,
                 (NOW() AT TIME ZONE 'Europe/Istanbul')::date,
                 INTERVAL '1 day'
             )::date AS lesson_date
+        ),
+        bounded_schedules AS (
+            SELECT s.*
+            FROM schedules s
+            CROSS JOIN bounds
+            WHERE s.start_time >= bounds.week_start
+              AND s.start_time < bounds.week_end
+              AND s.end_time <= NOW()
         )
         SELECT days.lesson_date,
                COUNT(s.id) FILTER (
@@ -58,9 +70,8 @@ async function findWeeklyAttendance() {
                    WHERE stats.student_count > 0 AND stats.recorded_count < stats.student_count
                )::INTEGER AS missing
         FROM days
-        LEFT JOIN schedules s
+        LEFT JOIN bounded_schedules s
           ON (s.start_time AT TIME ZONE 'Europe/Istanbul')::date = days.lesson_date
-         AND s.end_time <= NOW()
         LEFT JOIN LATERAL (${attendanceStatsSql}) stats ON s.id IS NOT NULL
         GROUP BY days.lesson_date
         ORDER BY days.lesson_date ASC

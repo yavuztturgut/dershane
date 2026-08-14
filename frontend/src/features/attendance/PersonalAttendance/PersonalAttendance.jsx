@@ -7,10 +7,12 @@ import { ResponsiveList } from '../../../components/ui/ResponsiveList/Responsive
 import { Surface } from '../../../components/ui/Surface/Surface';
 import { StatCard } from '../../../components/ui/StatCard/StatCard';
 import { formatIstanbulDateTime } from '../../../shared/time/istanbul-date-time';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 
 const colors = { present: 'green', absent: 'red', late: 'orange', excused: 'pink', not_recorded: 'gray' };
 
 export function PersonalAttendance({ query, filters, changeFilter, clearFilters, t, locale }) {
+  if (query.isLoading && !query.data) return <PageLoader />;
   if (query.isError && !query.data) return <Alert color="red">{t('errors.GENERIC')}</Alert>;
   const badge = (record) => <Badge color={colors[record.status] || 'gray'}>{record.status ? t(`attendanceStatus.${record.status}`) : t('notRecorded')}</Badge>;
   return <div aria-busy={query.isFetching}>

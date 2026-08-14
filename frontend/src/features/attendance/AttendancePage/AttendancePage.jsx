@@ -8,7 +8,7 @@ import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { openAppConfirmModal } from '../../../components/ui/AppModal/open-app-confirm-modal';
 import { useAuth } from '../../auth/use-auth';
 import { usersApi } from '../../users/users.api';
-import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
+import { useLookups } from '../../lookups/use-lookups';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { cachePolicy } from '../../../shared/query/cache-policy';
 import { AttendanceEditor } from '../AttendanceEditor/AttendanceEditor';
@@ -19,7 +19,7 @@ import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { formatIstanbulTime } from '../../../shared/time/istanbul-date-time';
 import { PersonalAttendance } from '../PersonalAttendance/PersonalAttendance';
-import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 
 function toDate(value) {
   if (!value) return undefined;
@@ -64,11 +64,11 @@ export function AttendancePage() {
   };
   const query = useQuery(attendanceQueryOptions);
   const lookupsQuery = useLookups(isAdmin);
-  const studentOptionsParams = { role: 'student' };
+  const studentOptionsParams = { role: 'student', class_id: filters.class_id || undefined };
   const usersQueryOptions = {
     queryKey: queryKeys.users.options(studentOptionsParams),
     queryFn: () => usersApi.getOptions(studentOptionsParams),
-    enabled: isAdmin,
+    enabled: isAdmin && Boolean(filters.class_id),
     staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
@@ -113,6 +113,13 @@ export function AttendancePage() {
     });
   }
 
+  function changeClass(value) {
+    navigate(() => {
+      setFilters((current) => ({ ...current, class_id: value || '', student_id: '' }));
+      setPage(1);
+    });
+  }
+
   function clearFilters() {
     navigate(() => {
       setFilters({ class_id: '', student_id: '', start: null, end: null });
@@ -139,24 +146,18 @@ export function AttendancePage() {
     }, closedIds);
   }
 
-  useSuspendingQueries([
-    { query, options: attendanceQueryOptions },
-    { query: lookupsQuery, options: getLookupsQueryOptions(isAdmin) },
-    { query: usersQuery, options: usersQueryOptions },
-  ]);
-
   if (user.role_name === 'teacher') return <Alert>{t('teacherAttendanceHint')}</Alert>;
 
   return <PageContainer><PageHeader title={t('attendance')} description={t('attendanceDescription')} />
     {!isAdmin ? <PersonalAttendance query={query} filters={filters} changeFilter={changeFilter} clearFilters={clearFilters} t={t} locale={i18n.language} /> : <>
       {(lookupsQuery.isError || usersQuery.isError) && <Alert color="red" mb="md">{t('errors.GENERIC')}</Alert>}
       <ResponsiveFilterPanel activeCount={Object.values(filters).filter(Boolean).length} onClear={clearFilters}><SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-        <Select clearable placeholder={t('class')} data={(lookupsQuery.data?.classes || []).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.class_id} onChange={(value) => changeFilter('class_id', value || '')} />
-        <Select searchable clearable placeholder={t('student')} data={(usersQuery.data || []).filter((item) => !filters.class_id || String(item.class_id) === filters.class_id).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.student_id} onChange={(value) => changeFilter('student_id', value || '')} />
+        <Select clearable placeholder={t('class')} data={(lookupsQuery.data?.classes || []).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.class_id} onChange={changeClass} />
+        <Select searchable clearable disabled={!filters.class_id} loading={usersQuery.isFetching} placeholder={t('student')} data={(usersQuery.data || []).map((item) => ({ value: String(item.id), label: item.name }))} value={filters.student_id} onChange={(value) => changeFilter('student_id', value || '')} />
         <DateInput clearable placeholder={t('start')} value={filters.start} onChange={(start) => changeFilter('start', start)} />
         <DateInput clearable placeholder={t('end')} value={filters.end} onChange={(end) => changeFilter('end', end)} />
       </SimpleGrid></ResponsiveFilterPanel>
-      <div aria-busy={query.isFetching}>{(query.isError && !query.data) ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data.days.length ? <EmptyState message={t('noData')} /> : <>
+      <div aria-busy={query.isFetching}>{query.isLoading && !query.data ? <PageLoader /> : (query.isError && !query.data) ? <Alert color="red">{t('errors.GENERIC')}</Alert> : !query.data?.days.length ? <EmptyState message={t('noData')} /> : <>
         <Accordion multiple value={openDays} onChange={changeDays} className={styles.days}>
           {query.data.days.map((day) => <Accordion.Item value={day.date} key={day.date} className={styles.day}>
             <Accordion.Control><Group justify="space-between" wrap="wrap" gap="xs" pr="sm"><Text fw={700}>{formatDay(day.date, i18n.language)}</Text><Group gap="xs"><Badge variant="light">{t('lessonCount', { count: day.lesson_count })}</Badge><Badge color={day.attendance_taken_count === day.lesson_count ? 'green' : 'gray'} variant="light">{t('attendanceProgress', { taken: day.attendance_taken_count, total: day.lesson_count })}</Badge></Group></Group></Accordion.Control>

@@ -9,7 +9,7 @@ import { notifyError, notifySuccess } from '../../../shared/notifications/notifi
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { cachePolicy } from '../../../shared/query/cache-policy';
-import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
+import { useLookups } from '../../lookups/use-lookups';
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { EmptyState } from '../../../components/ui/EmptyState/EmptyState';
 import { AppModal } from '../../../components/ui/AppModal/AppModal';
@@ -18,7 +18,7 @@ import { Surface } from '../../../components/ui/Surface/Surface';
 import { RecordCard } from '../../../components/ui/RecordCard/RecordCard';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
 import { ResponsiveList } from '../../../components/ui/ResponsiveList/ResponsiveList';
-import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 
 export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
   const { t } = useTranslation();
@@ -94,15 +94,12 @@ export function NamedEntityPage({ api, entity, titleKey, readOnly = false }) {
     });
   }
 
-  useSuspendingQueries([{ query: lookupsQuery, options: getLookupsQueryOptions() }]);
-  if (lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => lookupsQuery.refetch()}>{t('retry')}</Button></Alert>;
-
   const actions = (item) => readOnly ? t('systemRole') : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(item)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(item)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
 
   return (
     <PageContainer>
       <PageHeader title={t(titleKey)} description={t('definitionsDescription')} onCreate={readOnly ? undefined : openCreate} createLabel={t('create')} />
-      {!items?.length ? <EmptyState message={t('noData')} actionLabel={t('create')} onAction={readOnly ? undefined : openCreate} /> : (<>
+      {lookupsQuery.isLoading ? <PageLoader /> : lookupsQuery.isError ? <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" size="compact-sm" onClick={() => lookupsQuery.refetch()}>{t('retry')}</Button></Alert> : !items?.length ? <EmptyState message={t('noData')} actionLabel={t('create')} onAction={readOnly ? undefined : openCreate} /> : (<>
         <ResponsiveList desktop={<Surface>
           <Table highlightOnHover>
             <Table.Thead><Table.Tr><Table.Th>{t('name')}</Table.Th><Table.Th className="w-28">{t('actions')}</Table.Th></Table.Tr></Table.Thead>

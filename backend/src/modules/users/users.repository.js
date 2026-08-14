@@ -267,29 +267,41 @@ async function applyBulkUsers(ids, action, actorId) {
         const result = await getBulkCandidates(ids, action, actorId, client, true);
         const classIds = result.eligible.flatMap((user) => [user.class_id, action.type === 'assign_class' ? action.class_id : null]);
         await lockClasses(client, classIds);
-        const appliedIds = [];
-        for (const existing of result.eligible) {
+        if (!result.eligible.length) {
+            return { selected: result.selected, applied_ids: [], skipped: result.skipped };
+        }
+
+        const appliedIds = result.eligible.map((user) => Number(user.id));
+        const targetClassId = action.type === 'assign_class' ? action.class_id : null;
+        const targetStatus = action.type === 'activate' || action.type === 'restore' ? 1
+            : action.type === 'deactivate' ? 0
+                : action.type === 'delete' ? -1 : null;
+        await client.query(
+            `UPDATE users
+             SET class_id = CASE WHEN $1 = 'assign_class' THEN $2 ELSE class_id END,
+                 status = COALESCE($3, status),
+                 token_version = token_version + CASE WHEN $3 IS NULL THEN 0 ELSE 1 END,
+                 updated_at = NOW()
+             WHERE id = ANY($4::INTEGER[])
+             RETURNING id`,
+            [action.type, targetClassId, targetStatus, appliedIds]
+        );
+        if (action.type === 'delete') {
+            await client.query(
+                'DELETE FROM password_reset_tokens WHERE user_id = ANY($1::INTEGER[]) AND used_at IS NULL',
+                [appliedIds]
+            );
+        }
+        await rosterRepository.syncStudentsFutureSchedules(client, result.eligible.map((existing) => {
             const classId = action.type === 'assign_class' ? action.class_id : existing.class_id;
-            const status = action.type === 'activate' || action.type === 'restore' ? 1
-                : action.type === 'deactivate' ? 0
-                    : action.type === 'delete' ? -1 : existing.status;
-            await updateUserById(existing.id, {
-                role_id: existing.role_id,
-                class_id: classId,
-                password: existing.password,
-                status,
-                passwordChanged: false
-            }, client);
-            if (action.type === 'delete') {
-                await client.query('DELETE FROM password_reset_tokens WHERE user_id = $1 AND used_at IS NULL', [existing.id]);
-            }
-            await rosterRepository.syncStudentFutureSchedules(client, existing.id, {
+            const status = targetStatus ?? existing.status;
+            return {
+                id: existing.id,
                 roleName: existing.role_name,
                 classId,
-                isActive: status === 1
-            });
-            appliedIds.push(Number(existing.id));
-        }
+                isActive: status === 1,
+            };
+        }));
         return { selected: result.selected, applied_ids: appliedIds, skipped: result.skipped };
     });
 }

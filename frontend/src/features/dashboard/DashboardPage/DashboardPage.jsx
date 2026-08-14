@@ -15,7 +15,7 @@ import { PageContainer } from '../../../components/layout/PageContainer/PageCont
 import { PageHeader } from '../../../components/ui/PageHeader/PageHeader';
 import { cachePolicy } from '../../../shared/query/cache-policy';
 import { queryKeys } from '../../../shared/query/query-keys';
-import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import { useAuth } from '../../auth/use-auth';
 import { AttendanceCompletionChart } from '../AttendanceCompletionChart/AttendanceCompletionChart';
 import { DashboardMetricGrid } from '../DashboardMetricGrid/DashboardMetricGrid';
@@ -47,20 +47,14 @@ export function DashboardPage() {
     staleTime: cachePolicy.dashboard,
   };
   const query = useQuery(queryOptions);
-  useSuspendingQueries([{ query, options: queryOptions }]);
-
-  if (query.isError) {
-    return <Alert icon={<IconAlertCircle size={18} />} color="red">
-      {t('errors.GENERIC')}
-      <Button variant="subtle" size="compact-sm" onClick={() => query.refetch()}>{t('retry')}</Button>
-    </Alert>;
-  }
-
   const data = query.data;
 
   return <PageContainer>
     <PageHeader title={t('welcome', { name: user.name })} description={t('dashboardDescription')} />
-    <div className={styles.page}>
+    {query.isLoading ? <PageLoader /> : query.isError ? <Alert icon={<IconAlertCircle size={18} />} color="red">
+      {t('errors.GENERIC')}
+      <Button variant="subtle" size="compact-sm" onClick={() => query.refetch()}>{t('retry')}</Button>
+    </Alert> : <div className={styles.page}>
       <DashboardMetricGrid metrics={operationalMetrics} values={data.today} t={t} />
       <DashboardQuickActions schedules={data.todaySchedules} locale={i18n.language} t={t} />
       <div className={styles.contentGrid}>
@@ -76,6 +70,6 @@ export function DashboardPage() {
           </section>
         </div>
       </div>
-    </div>
+    </div>}
   </PageContainer>;
 }

@@ -15,14 +15,14 @@ import { notifyError, notifySuccess } from '../../../shared/notifications/notifi
 import { queryClient } from '../../../shared/query/query-client';
 import { queryKeys } from '../../../shared/query/query-keys';
 import { cachePolicy } from '../../../shared/query/cache-policy';
-import { getLookupsQueryOptions, useLookups } from '../../lookups/use-lookups';
+import { useLookups } from '../../lookups/use-lookups';
 import { usersApi } from '../users.api';
 import { PageContainer } from '../../../components/layout/PageContainer/PageContainer';
 import { ResponsiveFilterPanel } from '../../../components/ui/ResponsiveFilterPanel/ResponsiveFilterPanel';
 import { UserFilters } from '../UserFilters/UserFilters';
 import { UserForm } from '../UserForm/UserForm';
 import { UserList } from '../UserList/UserList';
-import { useSuspendingQueries } from '../../../shared/query/use-suspending-queries';
+import { PageLoader } from '../../../components/ui/PageLoader/PageLoader';
 import styles from './UsersPage.module.css';
 
 const initialValues = { role_id: '', class_id: '', name: '', email: '', password: '', status: 1 };
@@ -58,7 +58,7 @@ export function UsersPage() {
     staleTime: cachePolicy.operational,
   };
   const usersQuery = useQuery(usersQueryOptions);
-  const pageData = usersQuery.data;
+  const pageData = usersQuery.data || { items: [], total: 0, totalPages: 0, page: Number(queryParams.page) || 1 };
   const detailQuery = useQuery({ queryKey: queryKeys.users.detail(editingId), queryFn: () => usersApi.getById(editingId), enabled: Boolean(editingId), staleTime: cachePolicy.operational });
   const form = useForm({
     initialValues,
@@ -253,19 +253,15 @@ export function UsersPage() {
   }
   function confirmDelete(user) { openAppConfirmModal({ title: t('confirmDelete', { name: user.name }), children: t('deleteDescription'), labels: { confirm: t('delete'), cancel: t('cancel') }, confirmProps: { color: 'red' }, onConfirm: () => deleteMutation.mutate(user.id) }); }
 
-  useSuspendingQueries([
-    { query: usersQuery, options: usersQueryOptions },
-    { query: lookupsQuery, options: getLookupsQueryOptions() },
-  ]);
-  if ((usersQuery.isError && !usersQuery.data) || lookupsQuery.isError) return <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert>;
   const rowActions = (user) => user.status === -1
     ? <ActionIcon color="green" variant="subtle" loading={restoreMutation.isPending && restoreMutation.variables === user.id} onClick={() => restoreMutation.mutate(user.id)} aria-label={t('restore')}><IconRestore size={18} /></ActionIcon>
     : <Group gap="xs" wrap="nowrap"><ActionIcon variant="subtle" onClick={() => openEdit(user)} aria-label={t('edit')}><IconEdit size={18} /></ActionIcon><ActionIcon color="red" variant="subtle" onClick={() => confirmDelete(user)} aria-label={t('delete')}><IconTrash size={18} /></ActionIcon></Group>;
   const filterFields = <UserFilters searchParams={searchParams} setFilter={setFilter} roleOptions={roleOptions} classOptions={classOptions} t={t} />;
 
   return <PageContainer><PageHeader title={t('users')} description={t('usersDescription')} onCreate={openCreate} createLabel={t('create')} />
+    {lookupsQuery.isError && <Alert color="red" mb="md">{t('errors.GENERIC')}</Alert>}
     <ResponsiveFilterPanel primary={<TextInput placeholder={t('search')} value={searchInput} onChange={(event) => setSearchInput(event.currentTarget.value)} />} activeCount={activeFilterCount} onClear={clearFilters}>{filterFields}</ResponsiveFilterPanel>
-    <div aria-busy={usersQuery.isFetching}>{!pageData.items.length ? <EmptyState message={t('noData')} actionLabel={t('clearFilters')} onAction={activeFilterCount ? clearFilters : undefined} /> : <UserList users={pageData.items} roleName={roleName} className={className} actions={rowActions} isSelected={isSelected} onToggle={toggleUser} allPageSelected={allPageSelected} pageIndeterminate={pageIndeterminate} onTogglePage={togglePage} t={t} />}</div>
+    <div aria-busy={usersQuery.isFetching}>{usersQuery.isLoading && !usersQuery.data ? <PageLoader /> : usersQuery.isError && !usersQuery.data ? <Alert color="red">{t('errors.GENERIC')} <Button variant="subtle" onClick={() => usersQuery.refetch()}>{t('retry')}</Button></Alert> : !pageData.items.length ? <EmptyState message={t('noData')} actionLabel={t('clearFilters')} onAction={activeFilterCount ? clearFilters : undefined} /> : <UserList users={pageData.items} roleName={roleName} className={className} actions={rowActions} isSelected={isSelected} onToggle={toggleUser} allPageSelected={allPageSelected} pageIndeterminate={pageIndeterminate} onTogglePage={togglePage} t={t} />}</div>
     {pageData.totalPages > 1 && <Group justify="center" mt="lg"><Pagination total={pageData.totalPages} value={pageData.page} onChange={(page) => setFilter('page', String(page))} /></Group>}
     {selectedCount > 0 && <><div className={styles.bulkBarSpacer} aria-hidden="true" /><div className={styles.bulkBar}><Group justify="space-between" gap="sm" wrap="wrap"><Group gap="sm" wrap="wrap"><Text fw={600}>{selectionMode === 'filter' ? t('allResultsSelected', { count: selectedCount }) : t('usersSelected', { count: selectedCount })}</Text>{selectionMode === 'ids' && allPageSelected && pageData.total > pageIds.length && <Button variant="subtle" onClick={selectAllResults}>{t('selectAllResults', { count: pageData.total })}</Button>}</Group><Group gap="xs"><Menu shadow="md"><Menu.Target><Button>{t('bulkActions')}</Button></Menu.Target><Menu.Dropdown><Menu.Item onClick={() => startBulkAction('activate')}>{t('bulkActivate')}</Menu.Item><Menu.Item onClick={() => startBulkAction('deactivate')}>{t('bulkDeactivate')}</Menu.Item><Menu.Item onClick={() => startBulkAction('assign_class')}>{t('bulkAssignClass')}</Menu.Item><Menu.Item color="red" onClick={() => startBulkAction('delete')}>{t('bulkDelete')}</Menu.Item><Menu.Item onClick={() => startBulkAction('restore')}>{t('bulkRestore')}</Menu.Item></Menu.Dropdown></Menu><Button variant="subtle" onClick={clearSelection}>{t('clearSelection')}</Button></Group></Group></div></>}
     <AppModal opened={opened} onClose={() => setOpened(false)} title={t(editingId ? 'edit' : 'create')}>{detailQuery.isError ? <Alert color="red">{t('errors.GENERIC')}</Alert> : <UserForm form={form} editingId={editingId} roleOptions={roleOptions} classOptions={classOptions} saving={saveMutation.isPending} onCancel={() => setOpened(false)} onSubmit={(values) => saveMutation.mutate(values)} t={t} />}</AppModal>

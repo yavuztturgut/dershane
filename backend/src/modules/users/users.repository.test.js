@@ -85,21 +85,28 @@ test('bulk preview counts missing, unchanged and self accounts as skipped', asyn
 
 test('bulk class assignment updates eligible students and their future roster atomically', async () => {
     let rosterUpdate;
-    rosterRepository.syncStudentFutureSchedules = async (client, id, state) => { rosterUpdate = { client, id, state }; };
+    rosterRepository.syncStudentsFutureSchedules = async (client, students) => { rosterUpdate = { client, students }; };
     const queries = useClient(async (sql) => {
         if (sql === 'SELECT id FROM classes WHERE id = $1') return { rows: [{ id: 5 }], rowCount: 1 };
         if (sql.includes('WHERE u.id = ANY')) return {
-            rows: [{ id: 7, role_id: 3, role_name: 'student', password: 'hash', class_id: 4, status: 1 }],
-            rowCount: 1,
+            rows: [
+                { id: 7, role_id: 3, role_name: 'student', password: 'hash', class_id: 4, status: 1 },
+                { id: 8, role_id: 3, role_name: 'student', password: 'hash', class_id: 4, status: 1 },
+            ],
+            rowCount: 2,
         };
         if (sql.startsWith('SELECT id FROM classes WHERE id = ANY')) return { rows: [{ id: 4 }, { id: 5 }], rowCount: 2 };
-        if (sql.startsWith('UPDATE users')) return { rows: [{ id: 7, class_id: 5, status: 1 }], rowCount: 1 };
+        if (sql.startsWith('UPDATE users')) return { rows: [{ id: 7 }, { id: 8 }], rowCount: 2 };
         throw new Error(`Unexpected query: ${sql}`);
     });
 
-    const result = await repository.applyBulkUsers([7], { type: 'assign_class', class_id: 5 }, 1);
+    const result = await repository.applyBulkUsers([7, 8], { type: 'assign_class', class_id: 5 }, 1);
 
-    assert.deepEqual(result, { selected: 1, applied_ids: [7], skipped: 0 });
-    assert.deepEqual({ id: rosterUpdate.id, state: rosterUpdate.state }, { id: 7, state: { roleName: 'student', classId: 5, isActive: true } });
+    assert.deepEqual(result, { selected: 2, applied_ids: [7, 8], skipped: 0 });
+    assert.deepEqual(rosterUpdate.students, [
+        { id: 7, roleName: 'student', classId: 5, isActive: true },
+        { id: 8, roleName: 'student', classId: 5, isActive: true },
+    ]);
+    assert.equal(queries.filter(({ sql }) => sql.startsWith('UPDATE users')).length, 1);
     assert.ok(queries.some(({ sql }) => sql === 'COMMIT'));
 });
